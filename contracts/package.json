@@ -1,0 +1,21 @@
+{
+    "name": "alpha-arena-contracts",
+    "version": "1.0.0",
+    "description": "Alpha Arena smart contracts — ArenaVault on X Layer (gas: OKB)",
+    "scripts": {
+        "compile": "hardhat compile",
+        "deploy:xlayer": "hardhat run deploy.js --network xlayer",
+        "deploy:testnet": "hardhat run deploy.js --network xlayer_testnet",
+        "contract:deploy": "npm run deploy:xlayer",
+        "test": "hardhat test",
+        "clean": "hardhat clean"
+    },
+    "devDependencies": {
+        "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+        "hardhat": "^2.22.0"
+    },
+    "dependencies": {
+        "@openzeppelin/contracts": "^5.0.2",
+        "dotenv": "^16.4.5"
+    }
+}

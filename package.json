@@ -1,0 +1,21 @@
+{
+  "name": "alpha-arena",
+  "version": "1.0.0",
+  "private": true,
+  "description": "AI Trading Battleground — Real trades, real funds, real competition on X Layer mainnet",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../nextjs && npm install && cd ../contracts && npm install",
+    "dev:backend": "cd backend && npm run dev",
+    "dev:frontend": "cd nextjs && npm run dev",
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:frontend": "cd nextjs && npm run build",
+    "start:backend": "cd backend && npm start",
+    "start": "npm run start:backend",
+    "contract:compile": "cd contracts && npx hardhat compile",
+    "contract:deploy": "cd contracts && npx hardhat run deploy.js --network xlayer",
+    "contract:deploy:testnet": "cd contracts && npx hardhat run deploy.js --network xlayer_testnet"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "name": "alpha-arena-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "nodemon --watch src src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "ethers": "^6.13.1",
+    "express": "^4.19.2",
+    "openai": "^4.52.0",
+    "@anthropic-ai/sdk": "^0.24.0",
+    "axios": "^1.7.2",
+    "uuid": "^10.0.0",
+    "ws": "^8.17.1",
+    "crypto-js": "^4.2.0",
+    "winston": "^3.13.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

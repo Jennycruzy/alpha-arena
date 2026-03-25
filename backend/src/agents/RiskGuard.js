@@ -1,0 +1,81 @@
+import { BaseAgent } from "./BaseAgent.js";
+import okxClient from "../utils/okxClient.js";
+import config from "../../config/index.js";
+
+/**
+ * Risk Guard Agent
+ * Strategy: Conservative, low-volatility approach with heavy security screening.
+ * Uses okx-security for token safety and avoids risky plays.
+ */
+export class RiskGuardAgent extends BaseAgent {
+  constructor() {
+    super("Risk Guard", "risk-guard");
+  }
+
+  async fetchMarketData() {
+    // Gather prices + security data for all tradeable tokens
+    const [ethPrice, btcPrice, okbPrice, ethSecurity, btcSecurity] = await Promise.all([
+      okxClient.getTokenPrice(this.chainId, config.tokens.WETH).catch(() => null),
+      okxClient.getTokenPrice(this.chainId, config.tokens.WBTC).catch(() => null),
+      okxClient.getTokenPrice(this.chainId, config.tokens.OKB).catch(() => null),
+      okxClient.securityScan(this.chainId, config.tokens.WETH).catch(() => null),
+      okxClient.securityScan(this.chainId, config.tokens.WBTC).catch(() => null),
+    ]);
+
+    return {
+      prices: {
+        WETH: ethPrice?.data?.[0]?.price || "unknown",
+        WBTC: btcPrice?.data?.[0]?.price || "unknown",
+        OKB: okbPrice?.data?.[0]?.price || "unknown",
+      },
+      security: {
+        WETH: ethSecurity?.data?.[0] || {},
+        WBTC: btcSecurity?.data?.[0] || {},
+      },
+    };
+  }
+
+  getSystemPrompt() {
+    return `You are a risk-guard trading agent competing in a 10-minute trading arena.
+Your strategy: CAPITAL PRESERVATION first, modest gains second.
+
+You trade on X Layer mainnet with these pairs: ETH/USDC, BTC/USDC, OKB/USDC.
+
+Rules:
+- Only trade tokens that pass security scans
+- Prefer BTC and ETH (blue chips) over OKB
+- Small position sizes (10-20% max)
+- Only buy when price dips or is stable
+- SELL at first sign of volatility or drawdown
+- Default to HOLD when uncertain — preserving capital wins competitions
+- Never chase momentum
+
+Respond ONLY with JSON:
+{
+  "action": "BUY" | "SELL" | "HOLD",
+  "token": "WETH" | "WBTC" | "OKB",
+  "confidence": 0.0-1.0,
+  "reason": "brief explanation"
+}`;
+  }
+
+  buildUserPrompt(marketData) {
+    return `Current market data:
+
+Prices:
+- WETH: $${marketData.prices.WETH}
+- WBTC: $${marketData.prices.WBTC}
+- OKB: $${marketData.prices.OKB}
+
+Security Assessments:
+- WETH: ${JSON.stringify(marketData.security.WETH)}
+- WBTC: ${JSON.stringify(marketData.security.WBTC)}
+
+Your current balance: $${this.currentBalance.toFixed(2)} USDC
+Initial balance: $${this.initialBalance.toFixed(2)} USDC
+Trades executed: ${this.trades.length}
+Current ROI: ${this.initialBalance > 0 ? (((this.currentBalance - this.initialBalance) / this.initialBalance) * 100).toFixed(2) : 0}%
+
+What is your trading decision? Remember: preservation is key.`;
+  }
+}
