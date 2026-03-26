@@ -25,7 +25,7 @@ export default function CopyWinner({ winner, isPrivate = false }) {
     const [error, setError] = useState(null);
     const [show, setShow] = useState(true);
 
-    const meta = AGENT_META_MAP[winner?.agentId] || { name: winner?.name || "Unknown", icon: "🤖", color: "#00F0FF" };
+    const meta = AGENT_META_MAP[winner?.agentId] || { name: winner?.name || "Unknown", icon: "🤖", color: "#0052B4" };
     const minCapital = config?.entryFeeUsd ?? 0.5;
 
     const handleCopy = async () => {
@@ -128,7 +128,7 @@ export default function CopyWinner({ winner, isPrivate = false }) {
                                                 padding: "6px 10px", borderRadius: 6, cursor: "pointer",
                                                 background: capital === parseFloat(v) ? "rgba(0,240,255,0.1)" : "rgba(26,30,42,0.5)",
                                                 border: `1px solid ${capital === parseFloat(v) ? "rgba(0,240,255,0.3)" : "rgba(26,30,42,0.5)"}`,
-                                                color: capital === parseFloat(v) ? "#00F0FF" : "#5A6178",
+                                                color: capital === parseFloat(v) ? "#0052B4" : "#5A6178",
                                                 fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem",
                                             }}>
                                             ${v}
@@ -145,7 +145,7 @@ export default function CopyWinner({ winner, isPrivate = false }) {
                                 display: "flex", alignItems: "center", gap: 8,
                             }}>
                                 <span style={{ fontSize: "0.9rem" }}>{isPrivate ? "🔒" : "👁️"}</span>
-                                <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: isPrivate ? "#A855F7" : "#00F0FF" }}>
+                                <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: isPrivate ? "#A855F7" : "#0052B4" }}>
                                     {isPrivate ? "PRIVATE — strategy hidden via Venice AI" : "TRANSPARENT — reasoning visible to all"}
                                 </div>
                             </div>

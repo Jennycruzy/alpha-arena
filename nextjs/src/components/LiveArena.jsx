@@ -4,233 +4,160 @@ import { motion } from "framer-motion";
 import { useArena } from "@/context/ArenaContext";
 import TradeLog from "./TradeLog";
 import ReasoningPanel from "./ReasoningPanel";
-import Image from "next/image";
 
-const AGENT_META = {
-    "whale-follower": { name: "Whale Follower", icon: "🐋", color: "#3B82F6" },
-    "momentum-trader": { name: "Momentum Trader", icon: "🚀", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "🛡️", color: "#22C55E" },
+function formatTime(ms) {
+    const totalSec = Math.max(0, Math.floor(ms / 1000));
+    const min = Math.floor(totalSec / 60);
+    const sec = totalSec % 60;
+    return `${String(min).padStart(2, "0")}:${String(sec).padStart(2, "0")}`;
+}
+
+const AGENT_STYLES = {
+    "whale-follower": { icon: "WF", gradient: "from-blue-500/10 to-transparent", barColor: "bg-[#0052B4]", textColor: "text-[#0052B4]", glow: "glow-cyan" },
+    "momentum-trader": { icon: "MT", gradient: "from-orange-500/10 to-transparent", barColor: "bg-[#FFB000]", textColor: "text-[#FFB000]", glow: "glow-gold" },
+    "risk-guard": { icon: "RG", gradient: "from-green-500/10 to-transparent", barColor: "bg-[#00E676]", textColor: "text-[#00E676]", glow: "glow-green" },
 };
 
-function Sparkline({ history = [] }) {
-    if (!history.length) return null;
-    const max = Math.max(...history.map(Math.abs), 1);
-    return (
-        <div className="sparkline">
-            {history.slice(-16).map((v, i) => (
-                <div key={i} className="spark-bar"
-                    style={{ height: `${Math.max(2, Math.abs(v) / max * 100)}%`, background: v >= 0 ? "#00E676" : "#FF3B5C", opacity: 0.6 + i * 0.025 }} />
-            ))}
-        </div>
-    );
-}
-
-function WinProbBar({ probability = 0, color = "#00F0FF" }) {
-    return (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ flex: 1, height: 4, background: "rgba(26,30,42,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div
-                    animate={{ width: `${probability}%` }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    style={{ height: "100%", background: color, borderRadius: 2 }}
-                />
-            </div>
-            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color, width: 32, textAlign: "right" }}>
-                {probability.toFixed(0)}%
-            </span>
-        </div>
-    );
-}
-
-function LevelXPBar({ level, xp, xpToNextLevel, color }) {
-    const progress = xpToNextLevel === 0 ? 100 : (xp / Math.max(1, xp + xpToNextLevel)) * 100;
-    return (
-        <div style={{ marginTop: 12, borderTop: "1px dashed rgba(21,34,56,0.5)", paddingTop: 10 }}>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
-                <span style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.65rem", fontWeight: 700, color: "#E8EAF0", background: color, padding: "2px 6px", borderRadius: 4 }}>
-                    Lv. {level}
-                </span>
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#64748B" }}>
-                    {xpToNextLevel === 0 ? "MAX LEVEL" : `${xp} XP (${xpToNextLevel} to next)`}
-                </span>
-            </div>
-            <div style={{ width: "100%", height: 4, background: "rgba(21,34,56,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div animate={{ width: `${progress}%` }} style={{ height: "100%", background: color, borderRadius: 2 }} />
-            </div>
-            {/* Optional latest wisdom note if we passed it in */}
-        </div>
-    );
-}
-
-function AgentCard({ agent, isYours, rank }) {
-    const meta = AGENT_META[agent.agentId] || { name: agent.name, icon: "🤖", color: "#00F0FF" };
-    const roi = agent.roi ?? 0;
-    const isPos = roi >= 0;
-    const rankEmoji = ["🥇", "🥈", "🥉"][rank] || "";
-
-    return (
-        <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="glass-card overflow-hidden"
-            style={{ borderColor: isYours ? meta.color : "rgba(26,30,42,0.5)", boxShadow: isYours ? `0 0 24px ${meta.color}22` : "none" }}>
-            <div style={{ height: 3, background: `linear-gradient(90deg, ${meta.color}, transparent)`, opacity: isYours ? 1 : 0.4 }} />
-            <div style={{ padding: "14px 16px" }}>
-                {/* Row 1: name + ROI */}
-                <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: "1.3rem" }}>{meta.icon}</span>
-                        <div>
-                            <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta.color, fontSize: "0.85rem" }}>{meta.name}</div>
-                            {isYours && <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.55rem", color: "#00F0FF" }}>YOUR AGENT</div>}
-                        </div>
-                    </div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 5 }}>
-                        <span style={{ fontSize: "1rem" }}>{rankEmoji}</span>
-                        <span style={{
-                            fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "1rem",
-                            color: isPos ? "#00E676" : "#FF3B5C", textShadow: `0 0 10px ${isPos ? "rgba(0,230,118,0.4)" : "rgba(255,59,92,0.4)"}`
-                        }}>
-                            {isPos ? "+" : ""}{roi.toFixed(2)}%
-                        </span>
-                    </div>
-                </div>
-                {/* Row 2: balance + sparkline */}
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 6 }}>
-                    <div>
-                        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>Balance</div>
-                        <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", fontSize: "0.85rem" }}>
-                            ${(agent.currentBalance || 0).toFixed(3)}
-                        </div>
-                    </div>
-                    <Sparkline history={agent.roiHistory} />
-                </div>
-                {/* Row 3: stats */}
-                <div style={{ display: "flex", gap: 14, marginBottom: 8 }}>
-                    {[
-                        { label: "Trades", val: agent.tradeCount || 0 },
-                        { label: "Users", val: agent.userCount || "—" },
-                        { label: "Pool", val: agent.pooledCapital ? `$${agent.pooledCapital.toFixed(1)}` : "—" },
-                    ].map((s) => (
-                        <div key={s.label}>
-                            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.55rem", color: "#5A6178" }}>{s.label}</div>
-                            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#E8EAF0" }}>{s.val}</div>
-                        </div>
-                    ))}
-                </div>
-                {/* Row 4: win probability bar */}
-                {agent.winProbability != null && (
-                    <div>
-                        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.55rem", color: "#5A6178", marginBottom: 3 }}>Win Prob</div>
-                        <WinProbBar probability={agent.winProbability} color={meta.color} />
-                    </div>
-                )}
-                {/* 🧬 Row 5: Evolution / XP Bar */}
-                {(agent.level != null) && (
-                    <LevelXPBar
-                        level={agent.level}
-                        xp={agent.xp}
-                        xpToNextLevel={agent.xpToNextLevel}
-                        color={meta.color}
-                    />
-                )}
-            </div>
-        </motion.div>
-    );
-}
-
-function Timer({ ms, durationSecs }) {
-    const secs = Math.max(0, Math.floor(ms / 1000));
-    const m = Math.floor(secs / 60).toString().padStart(2, "0");
-    const s = (secs % 60).toString().padStart(2, "0");
-    const total = (durationSecs || 600) * 1000;
-    const pct = Math.min(1, 1 - ms / total);
-    const isLow = secs < 60;
-    return (
-        <div style={{ display: "inline-flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-            <div style={{
-                fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "2.5rem",
-                color: isLow ? "#FF3B5C" : "#00F0FF", textShadow: isLow ? "0 0 20px rgba(255,59,92,0.5)" : "0 0 20px rgba(0,240,255,0.4)"
-            }}>
-                {m}:{s}
-            </div>
-            <div style={{ width: 100, height: 3, background: "rgba(26,30,42,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div animate={{ scaleX: pct }} style={{ height: "100%", background: isLow ? "#FF3B5C" : "#00F0FF", borderRadius: 2, originX: 0 }} />
-            </div>
-        </div>
-    );
-}
-
 export default function LiveArena() {
-    const { leaderboard, remainingMs, selectedAgent, tradeLog, reasoningLog, evolutionLog, isPrivateArena, demoMode, config } = useArena();
+    const { leaderboard, remainingMs, selectedAgent, tradeLog, reasoningLog, evolutionLog, isPrivateArena, config } = useArena();
     const explorerUrl = config?.explorerUrl;
     const durationSecs = config?.durationSeconds || 600;
 
-    // ... inside LiveArena ...
+    const progress = Math.max(0, 1 - remainingMs / (durationSecs * 1000));
+
     return (
-        <div className="min-h-screen grid-bg flex flex-col px-4 py-6 relative overflow-x-hidden">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[900px] h-[400px] pointer-events-none"
-                style={{ background: "radial-gradient(ellipse, rgba(0,82,180,0.08) 0%, transparent 70%)" }} />
+        <div className="min-h-screen grid-bg flex flex-col px-4 py-8 relative">
+            {/* Top Progress Bar */}
+            <div className="fixed top-0 left-0 right-0 h-1 bg-surface z-50">
+                <motion.div
+                    className="h-full bg-gradient-to-r from-[#0052B4] to-[#8A2BE2]"
+                    style={{ width: `${progress * 100}%` }}
+                    transition={{ duration: 0.3 }}
+                />
+            </div>
 
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20, flexWrap: "wrap", gap: 12 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                    <Image src="/logo.png" alt="Logo" width={40} height={40} className="object-contain" />
+            <div className="max-w-5xl mx-auto w-full pt-4 relative z-10">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
                     <div>
-                        <h1 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1.2rem", color: "#E8EAF0" }}>
-                            Arena Live
+                        <h1 className="font-display text-4xl font-bold text-foreground">
+                            ARENA <span className="text-[#0052B4] drop-shadow-md">LIVE</span>
                         </h1>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: -2 }}>
-                            <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF395C" }} />
-                            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#FF395C", letterSpacing: "0.06em" }}>LIVE</span>
-                            {demoMode && <span className="demo-banner" style={{ marginLeft: 4 }}>DEMO</span>}
-                            {isPrivateArena && (
-                                <span style={{
-                                    marginLeft: 4, padding: "2px 8px", borderRadius: 12,
-                                    background: "rgba(124,58,237,0.1)", border: "1px solid rgba(124,58,237,0.3)",
-                                    fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#7C3AED"
-                                }}>🔒 PRIVATE</span>
-                            )}
+                        <p className="text-muted text-sm font-mono mt-1 text-foreground/70 flex items-center gap-2">
+                            Agents are trading autonomously with real funds
+                            {isPrivateArena && <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 text-[10px] border border-purple-500/30 font-bold tracking-[0.2em]">ENCRYPTED</span>}
+                        </p>
+                    </div>
+                    <div className="text-left sm:text-right bg-background/50 glass-card px-6 py-3 rounded-2xl border-border">
+                        <div className="font-mono text-4xl font-bold text-foreground tracking-wider">{formatTime(remainingMs)}</div>
+                        <div className="text-muted text-xs font-mono uppercase tracking-wider text-foreground/50 mt-1">Remaining Time</div>
+                    </div>
+                </div>
+
+                {/* Leaderboard Cards */}
+                <div className="space-y-8 mb-16">
+                    {leaderboard.length === 0 ? (
+                        <div className="glass-card p-16 text-center">
+                            <div className="w-12 h-12 border-[3px] border-foreground/20 border-t-[#0052B4] rounded-full animate-spin mb-8 mx-auto" />
+                            <p className="text-muted font-mono text-foreground/70 text-lg">Waiting for first trade cycle...</p>
+                            <p className="text-muted/50 text-sm font-mono mt-4 text-foreground/40">Agents execute trades every 25 seconds</p>
                         </div>
-                    </div>
-                </div>
-                <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                    {/* Spectator link */}
-                    <a href={`/spectate`} target="_blank" rel="noopener noreferrer"
-                        style={{
-                            fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#64748B",
-                            border: "1px solid rgba(21,34,56,0.6)", padding: "4px 10px", borderRadius: 6
-                        }}>
-                        👁 Spectate ↗
-                    </a>
-                    <Timer ms={remainingMs} durationSecs={durationSecs} />
-                </div>
-            </div>
+                    ) : leaderboard.map((agent, index) => {
+                        const style = AGENT_STYLES[agent.agentId] || AGENT_STYLES["whale-follower"];
+                        const isYours = agent.agentId === selectedAgent;
+                        const roi = agent.roi ?? 0;
+                        const roiPositive = roi >= 0;
 
-            {/* Leaderboard cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
-                {leaderboard.length === 0
-                    ? [0, 1, 2].map((i) => (
-                        <div key={i} className="glass-card p-5 animate-pulse" style={{ height: 160, opacity: 0.3 }} />
-                    ))
-                    : leaderboard.map((agent, i) => (
-                        <AgentCard key={agent.agentId} agent={agent}
-                            isYours={agent.agentId === selectedAgent} rank={i} />
-                    ))
-                }
-            </div>
+                        return (
+                            <motion.div
+                                key={agent.agentId}
+                                layout
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: index * 0.1 }}
+                                className={`glass-card p-6 md:p-8 bg-gradient-to-r ${style.gradient} transition-all duration-500
+                                           ${isYours ? `ring-1 ring-[#0052B4]/40 shadow-xl ${style.glow}` : ""}
+                                           ${index === 0 ? "glow-gold ring-1 ring-[#FFB000]/30 shadow-lg" : ""}`}
+                            >
+                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 md:gap-12">
+                                    {/* Rank + Agent Identity */}
+                                    <div className="flex items-center gap-6 md:gap-8">
+                                        <div className={`text-4xl md:text-5xl font-display font-bold md:w-16 text-center ${index === 0 ? "text-[#FFB000] text-glow-gold drop-shadow-lg" : "text-muted text-foreground/40"}`}>
+                                            #{index + 1}
+                                        </div>
+                                        <div className="w-14 h-14 rounded-xl bg-background/50 flex items-center justify-center font-display font-bold text-xl border border-border/50 shadow-inner tracking-wider" style={{ color: style.textColor }}>
+                                            {style.icon}
+                                        </div>
+                                        <div>
+                                            <div className="flex items-center gap-3 mb-1">
+                                                <h3 className={`font-display text-xl font-bold ${style.textColor} drop-shadow-sm`}>{agent.name}</h3>
+                                                {isYours && (
+                                                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#0052B4]/10 text-[#0052B4] border border-[#0052B4]/30 tracking-widest uppercase">
+                                                        YOUR PICK
+                                                    </span>
+                                                )}
+                                            </div>
+                                            <div className="text-muted text-xs font-mono text-foreground/60 flex items-center gap-4">
+                                                <span>USERS: {agent.userCount || 0}</span>
+                                                <span className="opacity-30">|</span>
+                                                <span>TRADES: {agent.tradeCount || 0}</span>
+                                            </div>
+                                        </div>
+                                    </div>
 
-            {/* 2-column: Trade feed + Reasoning panel */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, alignItems: "start" }}>
-                <div>
-                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 10, fontSize: "0.85rem" }}>
-                        Trade Feed
-                    </div>
-                    <TradeLog trades={tradeLog} explorerUrl={explorerUrl} />
+                                    {/* Financial Stats */}
+                                    <div className="flex items-center gap-8 bg-background/40 px-6 py-3 rounded-xl border border-border/30">
+                                        <div className="text-center">
+                                            <div className="text-foreground font-mono text-2xl font-semibold tracking-tight">
+                                                ${(agent.currentBalance || 0).toFixed(2)}
+                                            </div>
+                                            <div className="text-muted text-[10px] font-mono uppercase text-foreground/50 mt-1">Live Balance</div>
+                                        </div>
+                                        <div className="w-px h-10 bg-border/50" />
+                                        <div className="text-center">
+                                            <div className={`font-mono text-3xl font-bold tracking-tighter ${roiPositive ? "text-[#00E676] drop-shadow-sm" : "text-[#FF3B5C] drop-shadow-sm"}`}>
+                                                {roiPositive ? "+" : ""}{roi.toFixed(2)}%
+                                            </div>
+                                            <div className="text-muted text-[10px] font-mono uppercase text-foreground/50 mt-1">Net ROI</div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Dynamic ROI Bar */}
+                                <div className="mt-6 h-1.5 bg-background/50 rounded-full overflow-hidden border border-border/50">
+                                    <motion.div
+                                        className={`h-full rounded-full ${roiPositive ? "bg-[#00E676] shadow-[0_0_10px_rgba(0,230,118,0.5)]" : "bg-[#FF3B5C] shadow-[0_0_10px_rgba(255,59,92,0.5)]"}`}
+                                        initial={{ width: 0 }}
+                                        animate={{ width: `${Math.min(100, Math.abs(roi) * 2 + 5)}%` }}
+                                        transition={{ duration: 0.8, ease: "easeOut" }}
+                                    />
+                                </div>
+                            </motion.div>
+                        );
+                    })}
                 </div>
-                <div>
-                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 10, fontSize: "0.85rem" }}>
-                        {isPrivateArena ? "🔒 Strategy (Private)" : "Agent Reasoning"}
+
+                {/* Tactical Data Split View */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 items-start pb-24">
+                    <div className="glass-card p-8 border-border backdrop-blur-2xl">
+                        <div className="flex items-center gap-4 mb-8 border-b border-border/50 pb-6">
+                            <div className="w-3 h-3 rounded-full bg-[#0052B4] animate-pulse" />
+                            <h2 className="font-display font-semibold text-foreground text-base md:text-lg uppercase tracking-widest text-[#0052B4]">
+                                Live Trade Feed
+                            </h2>
+                        </div>
+                        <TradeLog trades={tradeLog} explorerUrl={explorerUrl} />
                     </div>
-                    <ReasoningPanel log={[...reasoningLog, ...(evolutionLog || [])].sort((a, b) => b.timestamp - a.timestamp)} isPrivate={isPrivateArena} />
+
+                    <div className="glass-card p-8 border-border backdrop-blur-2xl">
+                        <div className="flex items-center gap-4 mb-8 border-b border-border/50 pb-6">
+                            <div className={`w-3 h-3 rounded-full ${isPrivateArena ? "bg-purple-500" : "bg-[#FFB000]"} animate-pulse`} />
+                            <h2 className={`font-display font-semibold text-foreground text-base md:text-lg uppercase tracking-widest ${isPrivateArena ? "text-purple-500" : "text-[#FFB000]"}`}>
+                                {isPrivateArena ? "Encrypted Strategy Log" : "Agent Reasoning Engine"}
+                            </h2>
+                        </div>
+                        <ReasoningPanel log={[...reasoningLog, ...(evolutionLog || [])].sort((a, b) => b.timestamp - a.timestamp)} isPrivate={isPrivateArena} />
+                    </div>
                 </div>
             </div>
         </div>

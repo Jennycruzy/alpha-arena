@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { useArena } from "@/context/ArenaContext";
 
 const AGENT_MAP = {
-    "whale-follower": { name: "Whale Follower", icon: "🐋", color: "#3B82F6" },
-    "momentum-trader": { name: "Momentum Trader", icon: "🚀", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "🛡️", color: "#22C55E" },
+    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0052B4" },
+    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#F97316" },
+    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#22C55E" },
 };
 
 export default function WaitingRoom() {
@@ -19,7 +19,7 @@ export default function WaitingRoom() {
             <div className="absolute inset-0 pointer-events-none"
                 style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(168,85,247,0.05) 0%, transparent 60%)" }} />
 
-            {demoMode && <div className="demo-banner absolute top-6 right-6">⚡ DEMO MODE</div>}
+            {demoMode && <div className="demo-banner absolute top-6 right-6">DEMO MODE</div>}
 
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
                 className="text-center z-10 max-w-lg">
@@ -33,7 +33,7 @@ export default function WaitingRoom() {
                         width: 32, height: 32, borderRadius: "50%", background: "rgba(0,240,255,0.1)",
                         display: "flex", alignItems: "center", justifyContent: "center"
                     }}>
-                        <div className="animate-pulse" style={{ width: 12, height: 12, borderRadius: "50%", background: "#00F0FF" }} />
+                        <div className="animate-pulse" style={{ width: 12, height: 12, borderRadius: "50%", background: "#0052B4" }} />
                     </div>
                 </motion.div>
 
@@ -41,38 +41,33 @@ export default function WaitingRoom() {
                     Waiting for Fighters
                 </h2>
                 <p style={{ color: "#5A6178" }}>Arena starts when all 3 agents have at least 1 user</p>
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "#00F0FF", marginTop: 6, marginBottom: 32 }}>
+                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "#0052B4", marginTop: 6, marginBottom: 32 }}>
                     {filled}/3 agents filled
                 </p>
 
                 {/* Progress bar */}
                 <div style={{ height: 4, background: "rgba(26,30,42,0.8)", borderRadius: 2, marginBottom: 28, overflow: "hidden" }}>
-                    <motion.div style={{ height: "100%", background: "linear-gradient(90deg, #00F0FF, #A855F7)", borderRadius: 2 }}
+                    <motion.div style={{ height: "100%", background: "linear-gradient(90deg, #0052B4, #A855F7)", borderRadius: 2 }}
                         animate={{ width: `${(filled / 3) * 100}%` }} transition={{ duration: 0.4 }} />
                 </div>
 
                 {/* Agent slots */}
                 <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
-                    {allAgentIds.map((id) => {
+                    {allAgentIds.map((id, i) => {
                         const meta = AGENT_MAP[id];
                         const count = agentSelections[id] || 0;
                         const isFilled = count > 0;
                         const isYours = id === selectedAgent;
                         return (
-                            <motion.div key={id} initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }}
-                                className="glass-card"
-                                style={{
-                                    padding: "14px 20px", display: "flex", alignItems: "center", justifyContent: "space-between",
-                                    borderColor: isFilled ? "rgba(0,230,118,0.3)" : "rgba(26,30,42,0.5)",
-                                    opacity: isFilled ? 1 : 0.5
-                                }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                                    <span style={{ fontSize: "1.5rem" }}>{meta.icon}</span>
+                            <motion.div key={id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }}
+                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(26,30,42,0.4)", border: isYours ? `1px solid ${meta.color}` : "1px solid rgba(42,48,64,0.5)", borderRadius: 12, boxShadow: isYours ? `0 0 20px ${meta.color}20` : "none" }}>
+                                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: meta.color, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1.1rem" }}>{meta.icon}</div>
                                     <div>
                                         <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta.color }}>
                                             {meta.name}
                                         </div>
-                                        {isYours && <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#00F0FF" }}>YOUR PICK</div>}
+                                        {isYours && <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#0052B4" }}>YOUR PICK</div>}
                                     </div>
                                 </div>
                                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>

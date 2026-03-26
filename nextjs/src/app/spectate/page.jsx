@@ -28,7 +28,7 @@ function WinProbBar({ prob, color }) {
 }
 
 function LeaderboardCard({ agent, rank }) {
-    const meta = AGENT_COLORS[agent.agentId] || { name: agent.name, icon: "🤖", color: "#00F0FF" };
+    const meta = AGENT_COLORS[agent.agentId] || { name: agent.name, icon: "🤖", color: "#0052B4" };
     const roi = agent.roi ?? 0;
     const isPos = roi >= 0;
     const history = agent.roiHistory || [];
@@ -93,12 +93,12 @@ function CountdownTimer({ remainingMs, totalMs = 600000 }) {
         <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
             <div style={{
                 fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "2.2rem",
-                color: isLow ? "#FF3B5C" : "#00F0FF", textShadow: `0 0 16px ${isLow ? "rgba(255,59,92,0.5)" : "rgba(0,240,255,0.4)"}`
+                color: isLow ? "#FF3B5C" : "#0052B4", textShadow: `0 0 16px ${isLow ? "rgba(255,59,92,0.5)" : "rgba(0,240,255,0.4)"}`
             }}>
                 {m}:{s}
             </div>
             <div style={{ width: 90, height: 3, background: "rgba(26,30,42,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div animate={{ scaleX: pct }} style={{ height: "100%", background: isLow ? "#FF3B5C" : "#00F0FF", borderRadius: 2, originX: 0 }} />
+                <motion.div animate={{ scaleX: pct }} style={{ height: "100%", background: isLow ? "#FF3B5C" : "#0052B4", borderRadius: 2, originX: 0 }} />
             </div>
         </div>
     );
@@ -229,7 +229,7 @@ export default function SpectatePage() {
                                     padding: "8px 16px", borderRadius: 10, cursor: "pointer",
                                     background: selected === a.id ? "rgba(0,240,255,0.1)" : "rgba(13,15,20,0.7)",
                                     border: `1px solid ${selected === a.id ? "rgba(0,240,255,0.4)" : "rgba(26,30,42,0.6)"}`,
-                                    color: selected === a.id ? "#00F0FF" : "#E8EAF0",
+                                    color: selected === a.id ? "#0052B4" : "#E8EAF0",
                                     fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem",
                                     display: "flex", alignItems: "center", gap: 8,
                                 }}>

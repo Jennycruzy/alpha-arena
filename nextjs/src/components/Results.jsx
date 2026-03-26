@@ -7,15 +7,15 @@ import { useArena } from "@/context/ArenaContext";
 import CopyWinner from "./CopyWinner";
 
 const AGENT_META = {
-    "whale-follower": { name: "Whale Follower", icon: "🐋", color: "#3B82F6" },
-    "momentum-trader": { name: "Momentum Trader", icon: "🚀", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "🛡️", color: "#22C55E" },
+    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0052B4" },
+    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#F97316" },
+    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#22C55E" },
 };
 
 function Confetti() {
     const [particles] = useState(() => [...Array(52)].map((_, i) => ({
         id: i, x: Math.random() * 100, delay: Math.random() * 0.8,
-        color: ["#00F0FF", "#FFD700", "#FF3B5C", "#00E676", "#A855F7", "#F97316"][i % 6],
+        color: ["#0052B4", "#FFD700", "#FF3B5C", "#00E676", "#A855F7", "#F97316"][i % 6],
         size: 4 + Math.random() * 6, duration: 1.2 + Math.random() * 1.5,
     })));
     return (
@@ -134,10 +134,10 @@ export default function Results() {
                                 display: "flex", alignItems: "center", gap: 12, padding: "8px 0",
                                 borderBottom: i < standings.length - 1 ? "1px solid rgba(26,30,42,0.5)" : "none"
                             }}>
-                                <span style={{ fontSize: "1.1rem" }}>{["🥇", "🥈", "🥉"][i]}</span>
-                                <span style={{ fontSize: "1.2rem" }}>{meta?.icon}</span>
+                                <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 800, fontSize: "1.1rem", color: i === 0 ? "#FFD700" : i === 1 ? "#E2E8F0" : "#CD7F32", width: 36 }}>{i === 0 ? "1ST" : i === 1 ? "2ND" : "3RD"}</span>
+                                <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 28, height: 28, borderRadius: 6, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: meta?.color, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "0.8rem" }}>{meta?.icon}</div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta?.color || "#00F0FF", fontSize: "0.9rem" }}>{meta?.name || agent.name}</div>
+                                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta?.color || "#0052B4", fontSize: "0.9rem" }}>{meta?.name || agent.name}</div>
                                     <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#5A6178" }}>
                                         {agent.tradeCount} trades · ${agent.currentBalance?.toFixed(4)}
                                     </div>
@@ -165,8 +165,11 @@ export default function Results() {
                     </div>
                     {payouts.map((p) => (
                         <div key={p.userId} style={{ display: "flex", justifyContent: "space-between", padding: "5px 0", borderBottom: "1px solid rgba(26,30,42,0.3)" }}>
-                            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#5A6178" }}>
-                                {AGENT_META[p.agentId]?.icon} {p.userId?.slice(0, 6)}...{p.userId?.slice(-4)}
+                            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#5A6178", display: "flex", alignItems: "center", gap: 8 }}>
+                                <div style={{ width: 18, height: 18, borderRadius: 4, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: "0.6rem", color: AGENT_META[p.agentId]?.color }}>
+                                    {AGENT_META[p.agentId]?.icon}
+                                </div>
+                                {p.userId?.slice(0, 6)}...{p.userId?.slice(-4)}
                             </span>
                             <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: p.profit >= 0 ? "#00E676" : "#FF3B5C", fontWeight: 600 }}>
                                 ${p.payout.toFixed(4)}
@@ -178,7 +181,7 @@ export default function Results() {
                     </div>
                     {!config?.demoMode && (
                         <a href={`${explorerUrl}/address/${config?.vaultAddress}`} target="_blank" rel="noopener noreferrer"
-                            style={{ display: "block", marginTop: 5, fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#00F0FF" }}>
+                            style={{ display: "block", marginTop: 5, fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#0052B4" }}>
                             View ArenaVault ↗
                         </a>
                     )}

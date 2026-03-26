@@ -3,13 +3,13 @@
 import { motion, AnimatePresence } from "framer-motion";
 
 const AGENT_COLORS = {
-    "whale-follower": { color: "#3B82F6", icon: "🐋" },
-    "momentum-trader": { color: "#F97316", icon: "🚀" },
-    "risk-guard": { color: "#22C55E", icon: "🛡️" },
+    "whale-follower": { color: "#0052B4", icon: "WF" },
+    "momentum-trader": { color: "#FFB000", icon: "MT" },
+    "risk-guard": { color: "#00E676", icon: "RG" },
 };
 
 function ReasoningEntry({ entry, index }) {
-    const meta = AGENT_COLORS[entry.agentId] || { color: "#00F0FF", icon: "🤖" };
+    const meta = AGENT_COLORS[entry.agentId] || { color: "#0066FF", icon: "🤖" };
     const actionColors = { BUY: "#00E676", SELL: "#FF3B5C", HOLD: "#5A6178", EVOLVE: "#FACC15" };
     const conf = entry.confidence ?? 0;
     const ts = new Date(entry.timestamp).toLocaleTimeString("en", { hour12: false });
@@ -100,9 +100,9 @@ function ReasoningEntry({ entry, index }) {
                 {entry.action && (
                     <span style={{
                         fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "0.7rem",
-                        color: actionColors[entry.action] || "#00F0FF",
-                        background: `${actionColors[entry.action] || "#00F0FF"}18`,
-                        padding: "2px 8px", borderRadius: 4, border: `1px solid ${actionColors[entry.action] || "#00F0FF"}33`
+                        color: actionColors[entry.action] || "#0066FF",
+                        background: `${actionColors[entry.action] || "#0066FF"}18`,
+                        padding: "2px 8px", borderRadius: 4, border: `1px solid ${actionColors[entry.action] || "#0066FF"}33`
                     }}>{entry.action}</span>
                 )}
                 {entry.token && (
@@ -141,10 +141,10 @@ export default function ReasoningPanel({ log = [], isPrivate = false, className 
                 flexShrink: 0,
             }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: isPrivate ? "#A855F7" : "#00F0FF" }} />
+                    <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: isPrivate ? "#A855F7" : "#0066FF" }} />
                     <span style={{
                         fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem",
-                        color: isPrivate ? "#A855F7" : "#00F0FF",
+                        color: isPrivate ? "#A855F7" : "#0066FF",
                         textTransform: "uppercase", letterSpacing: "0.08em"
                     }}>
                         {isPrivate ? "🔒 Private Strategy" : "Agent Reasoning"}
@@ -160,16 +160,20 @@ export default function ReasoningPanel({ log = [], isPrivate = false, className 
                 {log.length === 0 ? (
                     <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10 }}>
                         {isPrivate ? (
-                            <>
-                                <div style={{ fontSize: "2rem" }}>🔒</div>
-                                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#A855F7", textAlign: "center" }}>
-                                    Private arena — reasoning hidden<br />
-                                    <span style={{ color: "rgba(168,85,247,0.5)", fontSize: "0.65rem" }}>Decisions processed via Venice AI</span>
-                                </p>
-                            </>
+                            <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "1px solid rgba(21,34,56,0.4)", borderRadius: 12, background: "rgba(10,13,20,0.4)" }}>
+                                <div style={{ padding: 20, textAlign: "center" }}>
+                                    <div className="text-2xl font-mono text-[#0052B4]/50 mb-4 font-bold tracking-widest">ENCRYPTED</div>
+                                    <div style={{ color: "#E8EAF0", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "1.1rem", marginBottom: 8 }}>
+                                        Private Arena Mode
+                                    </div>
+                                    <div style={{ color: "#5A6178", fontSize: "0.8rem", maxWidth: 220 }}>
+                                        Agent reasoning logs are encrypted and hidden from spectators.
+                                    </div>
+                                </div>
+                            </div>
                         ) : (
                             <>
-                                <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#00F0FF" }} />
+                                <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#0066FF" }} />
                                 <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#5A6178" }}>
                                     Waiting for agent reasoning...
                                 </p>

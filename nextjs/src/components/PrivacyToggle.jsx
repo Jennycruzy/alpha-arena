@@ -35,7 +35,7 @@ export default function PrivacyToggle({ isPrivate, onChange, veniceEnabled = fal
                         transition={{ type: "spring", stiffness: 400, damping: 28 }}
                         style={{
                             position: "absolute", top: 4, width: 18, height: 18, borderRadius: "50%",
-                            background: isPrivate ? "#A855F7" : "#00F0FF",
+                            background: isPrivate ? "#A855F7" : "#0052B4",
                             boxShadow: isPrivate ? "0 0 8px rgba(168,85,247,0.6)" : "0 0 8px rgba(0,240,255,0.5)",
                         }}
                     />
@@ -53,8 +53,8 @@ export default function PrivacyToggle({ isPrivate, onChange, veniceEnabled = fal
                         transition: "all 0.2s",
                     }}
                 >
-                    <div style={{ fontSize: "1.1rem", marginBottom: 4 }}>👁️</div>
-                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", color: !isPrivate ? "#00F0FF" : "#5A6178" }}>
+                    <div style={{ fontSize: "1.1rem", marginBottom: 4, visibility: "hidden" }}>👁️</div>
+                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.75rem", color: !isPrivate ? "#0052B4" : "#5A6178" }}>
                         Transparent
                     </div>
                     <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178", marginTop: 2 }}>

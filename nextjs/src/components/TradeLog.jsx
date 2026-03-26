@@ -4,9 +4,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useArena } from "@/context/ArenaContext";
 
 const AGENT_COLORS = {
-    "whale-follower": { color: "#3B82F6", bg: "rgba(59,130,246,0.1)", icon: "🐋" },
-    "momentum-trader": { color: "#F97316", bg: "rgba(249,115,22,0.1)", icon: "🚀" },
-    "risk-guard": { color: "#22C55E", bg: "rgba(34,197,94,0.1)", icon: "🛡️" },
+    "whale-follower": { color: "#0052B4", bg: "rgba(59,130,246,0.1)", icon: "WF" },
+    "momentum-trader": { color: "#F97316", bg: "rgba(249,115,22,0.1)", icon: "MT" },
+    "risk-guard": { color: "#22C55E", bg: "rgba(34,197,94,0.1)", icon: "RG" },
 };
 
 function truncateTx(hash) {
@@ -29,7 +29,7 @@ export default function TradeLog({ trades = [], explorerUrl }) {
         return (
             <div className="glass-card p-4" style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center" }}>
                 <div style={{ textAlign: "center" }}>
-                    <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#00F0FF", margin: "0 auto 8px" }} />
+                    <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#0052B4", margin: "0 auto 8px" }} />
                     <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#5A6178" }}>Waiting for first trade...</p>
                 </div>
             </div>
@@ -39,15 +39,15 @@ export default function TradeLog({ trades = [], explorerUrl }) {
     return (
         <div className="glass-card overflow-hidden" style={{ height: 260, display: "flex", flexDirection: "column" }}>
             <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(26,30,42,0.6)", display: "flex", alignItems: "center", gap: 8 }}>
-                <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#00F0FF" }} />
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#00F0FF", textTransform: "uppercase", letterSpacing: "0.08em" }}>
+                <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#0052B4" }} />
+                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#0052B4", textTransform: "uppercase", letterSpacing: "0.08em" }}>
                     Live Trade Feed
                 </span>
             </div>
             <div style={{ overflowY: "auto", flex: 1 }}>
                 <AnimatePresence initial={false}>
                     {trades.map((t, i) => {
-                        const meta = AGENT_COLORS[t.agentId] || { color: "#00F0FF", bg: "rgba(0,240,255,0.05)", icon: "🤖" };
+                        const meta = AGENT_COLORS[t.agentId] || { color: "#0052B4", bg: "rgba(0,240,255,0.05)", icon: "AI" };
                         const txLink = t.txHash && !t.txHash.startsWith("0xdemo")
                             ? `${explorerUrl || "https://www.okx.com/explorer/xlayer"}/tx/${t.txHash}` : null;
                         return (
@@ -76,7 +76,7 @@ export default function TradeLog({ trades = [], explorerUrl }) {
                                 </div>
                                 {txLink ? (
                                     <a href={txLink} target="_blank" rel="noopener noreferrer"
-                                        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#00F0FF", whiteSpace: "nowrap" }}>
+                                        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#0052B4", whiteSpace: "nowrap" }}>
                                         {truncateTx(t.txHash)} ↗
                                     </a>
                                 ) : (
