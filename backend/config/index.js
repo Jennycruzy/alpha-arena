@@ -15,12 +15,11 @@ if (!process.env.ARENA_WALLET_ADDRESS) missingKeys.push("ARENA_WALLET_ADDRESS");
 if (!process.env.OPENAI_API_KEY && !process.env.ANTHROPIC_API_KEY) missingKeys.push("OPENAI_API_KEY or ANTHROPIC_API_KEY");
 
 const requestedDemo = process.env.DEMO_MODE === "true";
-const autoDemo = missingKeys.length > 0;
-const demoMode = requestedDemo || autoDemo;
+const demoMode = requestedDemo;
 
-if (autoDemo && !requestedDemo) {
-  console.warn(`\n⚠️  DEMO_MODE auto-enabled — missing env vars: ${missingKeys.join(", ")}`);
-  console.warn(`   Set DEMO_MODE=false and fill in .env for real trading.\n`);
+if (!requestedDemo && missingKeys.length > 0) {
+  console.warn(`\n⚠️  PRODUCTION MODE — missing critical env vars: ${missingKeys.join(", ")}`);
+  console.warn(`   Server will refuse to start until real keys are provided.\n`);
 }
 
 const config = {
@@ -64,11 +63,11 @@ const config = {
   // Competition rules
   competition: {
     entryFeeUsd: parseFloat(process.env.ENTRY_FEE_USD || "0.5"),   // 0.5 USDC minimum
-    durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECONDS || "600"),
+    durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECONDS || "300"), // 5 mins
     agentLoopIntervalSeconds: parseInt(process.env.AGENT_LOOP_INTERVAL_SECONDS || "25"),
     leaderboardUpdateSeconds: parseInt(process.env.LEADERBOARD_UPDATE_INTERVAL_SECONDS || "5"),
     maxSlippagePercent: parseFloat(process.env.MAX_SLIPPAGE_PERCENT || "2"),
-    stopLossPercent: parseFloat(process.env.STOP_LOSS_PERCENT || "15"),
+    stopLossPercent: parseFloat(process.env.STOP_LOSS_PERCENT || "10"),
   },
 
   // Token addresses on X Layer mainnet

@@ -11,30 +11,30 @@ import PrivacyToggle from "./PrivacyToggle";
 
 const AGENTS = [
     {
-        id: "whale-follower", name: "Whale Follower", icon: "WF", risk: "Medium-High", accent: "#0052B4",
-        riskColor: "#0052B4",
+        id: "whale-follower", name: "Whale Follower", icon: "WF", risk: "Medium-High", accent: "#4499FF",
+        riskColor: "#4499FF", riskReward: "1.5x",
         description: "Monitors massive on-chain swaps and follows smart money flow before price impact hits retail.",
         strategy: "Strategy: On-Chain Volume Tracking"
     },
     {
-        id: "momentum-trader", name: "Momentum Trader", icon: "MT", risk: "High", accent: "#FFB000",
-        riskColor: "#FFB000",
+        id: "momentum-trader", name: "Momentum Trader", icon: "MT", risk: "High", accent: "#FF4500",
+        riskColor: "#FF4500", riskReward: "2.0x",
         description: "Executes rapid trades based on order book imbalance and short-term volatility spikes.",
         strategy: "Strategy: Order Book Imbalance"
     },
     {
         id: "risk-guard", name: "Risk Guard", icon: "RG", risk: "Low", accent: "#00E676",
-        riskColor: "#00E676",
+        riskColor: "#00E676", riskReward: "0.8x",
         description: "Focuses on yield preservation, trading only when absolute arbitrage opportunities emerge.",
-        strategy: "Strategy: Delta-Neutral Arbitrage"
+        strategy: "Strategy: Capital Preservation"
     }
 ];
 
-const STEPS = ["Select Agent", "Approve USDC", "Pay Entry Fee", "Joining Arena"];
+const STEPS = ["Selection Validated", "Awaiting Approval", "Initiating Payout", "Joining Battle Arena"];
 
 export default function AgentSelection() {
     const { address } = useAccount();
-    const { setPhase, setSelectedAgent, setArenaId, agentSelections, demoMode, config, veniceEnabled,
+    const { setPhase, setSelectedAgent, setArenaId, agentSelections, config, veniceEnabled,
         isPrivateArena, setIsPrivateArena } = useArena();
 
     const [selectedId, setSelectedId] = useState(null);
@@ -54,7 +54,6 @@ export default function AgentSelection() {
         setSelectedId(agentId);
         setError(null);
 
-        // ─── Real x402 Payment Flow ──────────────────────────────────────────────
         try {
             setStep(0);
             const arenaData = await api.getCurrentArena();
@@ -106,39 +105,48 @@ export default function AgentSelection() {
     };
 
     return (
-        <div className="min-h-screen grid-bg flex flex-col items-center px-4 py-8 md:py-16 relative overflow-y-auto overflow-x-hidden">
+        <div className="min-h-screen grid-bg flex flex-col items-center px-6 py-20 relative overflow-y-auto overflow-x-hidden bg-[#030406]">
 
             <button
                 onClick={() => setPhase("landing")}
-                className="absolute top-4 left-4 md:top-8 md:left-8 z-50 flex items-center gap-2 px-4 py-2 glass-card hover:bg-[rgba(0,102,255,0.1)] transition-colors text-foreground text-sm font-semibold rounded-full border border-[rgba(0,102,255,0.2)]"
+                className="absolute top-10 left-10 z-50 flex items-center gap-2 group"
             >
-                <ArrowLeft size={16} /> Back to Home
+                <div className="w-8 h-8 flex items-center justify-center border border-border group-hover:bg-white group-hover:text-black transition-all">
+                    <ArrowLeft size={14} />
+                </div>
+                <span className="terminal-text text-muted group-hover:text-white transition-colors">Abort Mission</span>
             </button>
 
-            <div className="fixed top-1/4 left-1/2 -translate-x-1/2 w-[400px] h-[400px] md:w-[600px] md:h-[600px] rounded-full pointer-events-none -z-10"
-                style={{ background: "radial-gradient(circle, rgba(0,102,255,0.08) 0%, transparent 70%)" }} />
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-10 z-10 pt-12 md:pt-0">
-                <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700 }} className="text-3xl md:text-[2.5rem] text-foreground mb-4">
-                    Choose Your Agent
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="text-center mb-16 z-10">
+                <h2 className="font-display font-black text-5xl md:text-6xl text-white tracking-tighter uppercase mb-4">
+                    AGENT<br /><span className="text-primary italic">SELECTION.</span>
                 </h2>
-                <p style={{ color: "#64748B", marginTop: 8 }}>Pick the AI strategy that matches your conviction</p>
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "rgba(100,116,139,0.7)", marginTop: 4 }}>
-                    Entry fee: ${entryFee} USDC · All 3 agents must be selected to start
-                </p>
+                <div className="terminal-text text-white font-black flex items-center justify-center gap-6 text-sm">
+                    <span className="bg-white/10 px-3 py-1 border border-white/20">ENTRY: ${entryFee} USDC</span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                    <span className="bg-white/10 px-3 py-1 border border-white/20">CYCLE: {durationSecs / 60} MIN</span>
+                    <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
+                    <span className="bg-error/20 text-error px-3 py-1 border border-error/40">STOP LOSS: 10%</span>
+                </div>
             </motion.div>
 
             {/* Privacy Toggle */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}
-                className="max-w-md w-full z-10 mb-8">
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+                className="max-w-xl w-full z-10 mb-12 p-8 border border-border bg-surface/80 backdrop-blur-md">
                 <PrivacyToggle isPrivate={isPrivateArena} onChange={setIsPrivateArena} veniceEnabled={veniceEnabled} />
-                <p className="text-foreground/70 text-sm mt-4">
-                    Pick your AI combatant. The arena runs for {durationSecs / 60} mins. Winners divide entry fees.
-                </p>
+                <div className="mt-6 flex flex-col items-center gap-4">
+                    <div className="px-3 py-1 bg-success/10 border border-success/30 flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 bg-success rounded-full animate-pulse" />
+                        <span className="font-mono text-[9px] text-success font-black uppercase tracking-widest">Funds Secured on X Layer</span>
+                    </div>
+                    <p className="terminal-text text-white text-center leading-loose text-xs font-black max-w-sm uppercase tracking-widest">
+                        Private mode encrypts your agent's strategy weights during combat cycles. Recommended for elite trading logic.
+                    </p>
+                </div>
             </motion.div>
 
-            {/* Agent Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 md:gap-10 w-full max-w-6xl relative z-10 pb-16">
+            {/* Agent Grid */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 w-full max-w-7xl relative z-10 pb-40">
                 {AGENTS.map((agent, i) => {
                     const userCount = agentSelections[agent.id] || 0;
                     const isSelected = selectedId === agent.id;
@@ -146,85 +154,110 @@ export default function AgentSelection() {
 
                     return (
                         <motion.div key={agent.id}
-                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 + i * 0.1 }}
+                            initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 + i * 0.1 }}
                             onClick={() => { if (step === null) setSelectedId(agent.id); }}
-                            className={`glass-card p-6 md:p-8 cursor-pointer flex flex-col h-full transition-all duration-300
-                                ${isSelected ? "ring-2 ring-offset-bg bg-background/80 shadow-2xl scale-105 z-20" : "hover:bg-background/60 hover:-translate-y-2"}
+                            className={`group relative p-10 cursor-pointer flex flex-col h-full transition-all duration-300 border
+                                ${isSelected ? "border-primary bg-primary/5" : "border-border bg-surface/40 hover:bg-surface/80 hover:border-white/20"}
                             `}
-                            style={{
-                                borderColor: isSelected ? agent.accent : "var(--glass-border)",
-                                boxShadow: isSelected ? `0 0 40px ${agent.accent}40, inset 0 0 20px ${agent.accent}20` : undefined,
-                                opacity: step !== null && !isSelected ? 0.3 : 1,
-                            }}>
-                            <div className="w-16 h-16 rounded-xl flex items-center justify-center font-display font-bold text-3xl mb-8 mx-auto md:mx-0 shadow-inner" style={{ background: `${agent.accent}10`, color: agent.accent, border: `1px solid ${agent.accent}40`, textShadow: `0 0 20px ${agent.accent}60` }}>{agent.icon}</div>
+                            style={{ opacity: step !== null && !isSelected ? 0.2 : 1 }}>
 
-                            <div className="flex-grow flex flex-col text-center md:text-left items-center md:items-start">
-                                <h3 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1.4rem", color: "var(--text-color)", marginBottom: 8 }}>{agent.name}</h3>
-                                <div style={{ display: "inline-block", padding: "4px 12px", borderRadius: 6, background: `${agent.riskColor}15`, color: agent.riskColor, fontSize: "0.75rem", fontFamily: "JetBrains Mono, monospace", fontWeight: 700, marginBottom: 16, border: `1px solid ${agent.riskColor}30` }}>
-                                    {agent.risk} Risk
-                                </div>
-                                <p className="text-foreground/70 text-sm leading-relaxed mb-6 flex-grow">{agent.description}</p>
+                            {isSelected && (
+                                <div className="absolute top-0 right-0 p-2 terminal-text text-primary">SELECTED_AGENT</div>
+                            )}
 
-                                <div className="w-full">
-                                    <div className="text-foreground/50 text-[11px] font-mono border-t border-border/50 pt-4 leading-relaxed">{agent.strategy}</div>
+                            <div className="w-16 h-16 flex items-center justify-center border border-border bg-black mb-8 group-hover:border-primary/50 transition-colors relative">
+                                <span className="font-mono font-bold text-2xl" style={{ color: agent.accent }}>{agent.icon}</span>
+                                <div className="absolute -bottom-2 -right-2 bg-primary text-black font-mono text-[8px] px-1 font-black">LV.1</div>
+                            </div>
+
+                            <div className="flex-grow">
+                                <h3 className="font-display font-black text-3xl text-white mb-6 tracking-tighter uppercase">{agent.name}</h3>
+                                <p className="font-mono text-xs text-white leading-relaxed uppercase tracking-widest mb-10 font-bold">
+                                    {agent.description}
+                                </p>
+
+                                <div className="space-y-4">
+                                    <div className="flex justify-between items-center py-4 border-t border-white/10">
+                                        <span className="terminal-text text-white font-black uppercase text-[10px]">Risk-Reward</span>
+                                        <span className="font-mono text-xs font-black tracking-widest text-[#4499FF] uppercase">{agent.riskReward} Multiplier</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-4 border-t border-white/10">
+                                        <span className="terminal-text text-white font-black uppercase text-[10px]">Agent Status</span>
+                                        <span className="font-mono text-xs text-success font-black tracking-widest uppercase">Operational</span>
+                                    </div>
+                                    <div className="flex justify-between items-center py-4 border-t border-white/10">
+                                        <span className="terminal-text text-white font-black uppercase text-[10px]">Live Queue</span>
+                                        <span className="font-mono text-xs text-white font-black tracking-widest underline decoration-primary underline-offset-4">{userCount} ACTIVE</span>
+                                    </div>
                                 </div>
                             </div>
 
-                            {userCount > 0 && (
-                                <div style={{ marginTop: 24, display: "flex", justifyContent: "center", alignItems: "center", gap: 8, padding: "8px 16px", borderRadius: 12, background: "rgba(0,102,255,0.05)", border: "1px solid rgba(0,102,255,0.2)" }} className="w-full">
-                                    <div style={{ width: 8, height: 8, borderRadius: "50%", background: "#0052B4" }} className="animate-pulse shadow-[0_0_8px_#0052B4]" />
-                                    <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "0.85rem", color: "#0052B4" }}>{userCount} Fighter{userCount !== 1 ? "s" : ""} Ready</span>
-                                </div>
-                            )}
+                            <button
+                                onClick={(e) => { e.stopPropagation(); handleSelect(agent.id); }}
+                                disabled={step !== null}
+                                className={`mt-10 w-full py-4 font-mono font-bold text-xs uppercase tracking-[0.3em] transition-all
+                                    ${isSelected ? "bg-primary text-black hover:bg-white" : "bg-white/5 text-white hover:bg-white hover:text-black border border-white/10"}
+                                    ${step !== null ? "opacity-30 cursor-not-allowed" : ""}
+                                `}>
+                                {isSelected ? "Finalize Selection" : "Lock In"}
+                            </button>
                         </motion.div>
                     );
                 })}
             </div>
 
-            {/* Payment Progress */}
+            {/* Payment Debugger UI */}
             <AnimatePresence>
                 {step !== null && (
-                    <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="glass-card mt-8 p-6 max-w-md w-full z-10 mx-auto bg-background/90 backdrop-blur-3xl shadow-2xl absolute md:relative bottom-4 md:bottom-auto left-4 right-4 md:left-auto md:right-auto md:w-auto w-[calc(100%-2rem)]">
-                        <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600 }} className="text-foreground mb-4">
-                            Processing x402 Payment
-                        </p>
-                        <div className="flex gap-3 mb-4">
-                            {["Approve", "Pay", "Verify", "Join"].map((label, i) => (
-                                <div key={label} className="flex-1 text-center">
-                                    <div style={{
-                                        width: 28, height: 28, borderRadius: "50%", border: "2px solid",
-                                        borderColor: step > i ? "#00E676" : step === i ? "#0066FF" : "rgba(100,116,139,0.3)",
-                                        background: step > i ? "rgba(0,230,118,0.1)" : "transparent",
-                                        display: "flex", alignItems: "center", justifyContent: "center",
-                                        margin: "0 auto 4px", fontSize: "0.7rem",
-                                        color: step > i ? "#00E676" : step === i ? "#0066FF" : "#64748B",
-                                        fontFamily: "JetBrains Mono, monospace"
-                                    }}>
-                                        {step > i ? "✓" : i + 1}
+                    <motion.div initial={{ opacity: 0, y: 100 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 100 }}
+                        className="fixed bottom-0 left-0 right-0 p-10 bg-surface border-t border-primary z-[100] flex flex-col md:flex-row items-center justify-between gap-10">
+                        <div className="flex flex-col gap-2">
+                            <h4 className="font-display font-bold text-xl uppercase tracking-widest text-primary">TRANSACTION_PAYLOAD</h4>
+                            <div className="flex items-center gap-4">
+                                {STEPS.map((s, i) => (
+                                    <div key={s} className="flex items-center gap-2">
+                                        <div className={`w-2 h-2 rounded-full ${step > i ? "bg-success" : step === i ? "bg-primary animate-pulse" : "bg-white/10"}`} />
+                                        <span className={`terminal-text ${step === i ? "text-white" : "text-muted"}`}>{s}</span>
                                     </div>
-                                    <div style={{ fontSize: "0.6rem", color: step === i ? "#0066FF" : "#64748B", fontFamily: "JetBrains Mono, monospace" }}>{label}</div>
-                                </div>
-                            ))}
+                                ))}
+                            </div>
                         </div>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, color: "#64748B", fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem" }}>
-                            <div className="animate-spin" style={{ width: 14, height: 14, border: "2px solid rgba(0,102,255,0.3)", borderTopColor: "#0066FF", borderRadius: "50%" }} />
-                            {STEPS[step]}...
-                        </div>
+
                         {pendingTxHash && (
-                            <a href={`${config?.explorerUrl || "https://www.okx.com/explorer/xlayer"}/tx/${pendingTxHash}`}
-                                target="_blank" rel="noopener noreferrer"
-                                style={{ display: "block", marginTop: 8, fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#0066FF" }}>
-                                View tx: {pendingTxHash.slice(0, 16)}...
-                            </a>
+                            <div className="flex-1 max-w-md hidden lg:block">
+                                <div className="terminal-text text-muted mb-2">Hash Dump:</div>
+                                <div className="p-3 bg-black border border-border font-mono text-xs break-all text-primary/80">
+                                    {pendingTxHash}
+                                </div>
+                            </div>
                         )}
+
+                        <div className="flex items-center gap-6">
+                            {pendingTxHash && (
+                                <a href={`${config?.explorerUrl || "https://www.okx.com/explorer/xlayer"}/tx/${pendingTxHash}`}
+                                    target="_blank" rel="noopener noreferrer"
+                                    className="terminal-text text-muted hover:text-white border-b border-muted transition-colors">
+                                    Explorer View ↗
+                                </a>
+                            )}
+                            <div className="px-6 py-3 bg-primary/10 border border-primary/30 flex items-center gap-3">
+                                <div className="w-4 h-4 border-2 border-primary border-t-transparent animate-spin rounded-full" />
+                                <span className="terminal-text text-primary">Processing...</span>
+                            </div>
+                        </div>
                     </motion.div>
                 )}
             </AnimatePresence>
 
             {error && (
-                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 text-sm" style={{ color: "#FF395C" }}>
-                    {error}
+                <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} className="fixed bottom-10 right-10 z-[110] bg-error p-8 max-w-md text-black font-mono text-xs uppercase font-black tracking-widest border-4 border-black shadow-[10px_10px_0px_#000]">
+                    <div className="flex justify-between items-start mb-6 border-b border-black pb-4">
+                        <span className="text-sm">CRITICAL_FAILURE</span>
+                        <button onClick={() => setError(null)} className="bg-black text-error px-3 py-1 hover:bg-white hover:text-black transition-colors">CLOSE</button>
+                    </div>
+                    <div className="leading-loose break-all">
+                        {error}
+                    </div>
                 </motion.div>
             )}
         </div>

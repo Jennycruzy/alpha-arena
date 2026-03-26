@@ -6,21 +6,22 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { api } from "@/utils/api";
 import ReasoningPanel from "@/components/ReasoningPanel";
 import TradeLog from "@/components/TradeLog";
+import Link from "next/link";
 
 const AGENT_COLORS = {
-    "whale-follower": { name: "Whale Follower", icon: "🐋", color: "#3B82F6" },
-    "momentum-trader": { name: "Momentum Trader", icon: "🚀", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "🛡️", color: "#22C55E" },
+    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0066FF" },
+    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#FF4500" },
+    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#00E676" },
 };
 
 function WinProbBar({ prob, color }) {
     return (
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            <div style={{ flex: 1, height: 5, background: "rgba(26,30,42,0.8)", borderRadius: 3, overflow: "hidden" }}>
+        <div className="flex items-center gap-2">
+            <div className="flex-1 h-1 bg-[#0A0B0E] border border-border/50 overflow-hidden">
                 <motion.div animate={{ width: `${prob || 0}%` }} transition={{ duration: 0.7, ease: "easeOut" }}
-                    style={{ height: "100%", background: color, borderRadius: 3 }} />
+                    className="h-full" style={{ background: color }} />
             </div>
-            <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color, width: 30, textAlign: "right" }}>
+            <span className="font-mono text-[9px] w-8 text-right tracking-widest" style={{ color }}>
                 {(prob || 0).toFixed(0)}%
             </span>
         </div>
@@ -28,56 +29,59 @@ function WinProbBar({ prob, color }) {
 }
 
 function LeaderboardCard({ agent, rank }) {
-    const meta = AGENT_COLORS[agent.agentId] || { name: agent.name, icon: "🤖", color: "#0052B4" };
+    const meta = AGENT_COLORS[agent.agentId] || { name: agent.name, icon: "AI", color: "#0066FF" };
     const roi = agent.roi ?? 0;
     const isPos = roi >= 0;
     const history = agent.roiHistory || [];
     const max = Math.max(...history.map(Math.abs), 1);
 
     return (
-        <motion.div layout initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-            className="glass-card overflow-hidden">
-            <div style={{ height: 3, background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
-            <div style={{ padding: "14px 18px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 10 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: "1.4rem" }}>{meta.icon}</span>
-                        <div>
-                            <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta.color }}>{meta.name}</div>
-                            <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>
-                                {agent.userCount || 0} users · {agent.tradeCount || 0} trades
+        <motion.div layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+            className="bg-[#0A0B0E]/80 backdrop-blur-md border border-border/50 p-4 transition-colors hover:border-border/80">
+            <div className="flex justify-between items-start mb-4">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 flex items-center justify-center font-mono font-bold text-[10px] border border-border/50 bg-[#0A0B0E]" style={{ color: meta.color }}>
+                        {meta.icon}
+                    </div>
+                    <div>
+                        <div className="font-display font-bold text-xs uppercase tracking-wider text-white">{meta.name}</div>
+                        <div className="font-mono text-[9px] text-muted tracking-widest mt-1">
+                            {agent.userCount || 0} USR · {agent.tradeCount || 0} TX
+                            <div className="flex items-center gap-2 mt-1.5">
+                                <span className="text-primary font-bold">LVL {agent.level || 1}</span>
+                                <span className="text-white/20">|</span>
+                                <span>{agent.xp || 0} XP</span>
                             </div>
                         </div>
                     </div>
-                    <div style={{ textAlign: "right" }}>
-                        <div style={{
-                            fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "1.1rem",
-                            color: isPos ? "#00E676" : "#FF3B5C"
-                        }}>
-                            {isPos ? "+" : ""}{roi.toFixed(2)}%
-                        </div>
-                        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#5A6178" }}>
-                            ${(agent.currentBalance || 0).toFixed(3)}
-                        </div>
+                </div>
+                <div className="text-right">
+                    <div className={`font-mono font-bold text-sm tracking-widest ${isPos ? "text-[#00E676]" : "text-[#FF3B5C]"}`}>
+                        {isPos ? "+" : ""}{roi.toFixed(2)}%
+                    </div>
+                    <div className="font-mono text-[9px] text-muted tracking-widest mt-1">
+                        POOL: ${(agent.pooledCapital || 0).toFixed(1)}
                     </div>
                 </div>
-                {/* ROI Sparkline */}
-                {history.length > 0 && (
-                    <div className="sparkline" style={{ marginBottom: 8 }}>
-                        {history.slice(-20).map((v, i) => (
-                            <div key={i} className="spark-bar" style={{
-                                height: `${Math.max(2, Math.abs(v) / max * 100)}%`,
-                                background: v >= 0 ? "#00E676" : "#FF3B5C",
-                                opacity: 0.5 + i * 0.025
-                            }} />
-                        ))}
-                    </div>
-                )}
-                {/* Win probability */}
-                <div>
-                    <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.55rem", color: "#5A6178", marginBottom: 3 }}>Win Prob</div>
-                    <WinProbBar prob={agent.winProbability} color={meta.color} />
+            </div>
+
+            {/* ROI Sparkline */}
+            {history.length > 0 && (
+                <div className="flex items-end h-4 gap-[1px] mb-3">
+                    {history.slice(-30).map((v, i) => (
+                        <div key={i} className="flex-1" style={{
+                            height: `${Math.max(10, Math.abs(v) / max * 100)}%`,
+                            background: v >= 0 ? "#00E676" : "#FF3B5C",
+                            opacity: 0.3 + i * 0.02
+                        }} />
+                    ))}
                 </div>
+            )}
+
+            {/* Win probability */}
+            <div>
+                <div className="font-mono text-[8px] text-muted uppercase tracking-widest mb-1">Win Probability Model</div>
+                <WinProbBar prob={agent.winProbability} color={meta.color} />
             </div>
         </motion.div>
     );
@@ -89,16 +93,14 @@ function CountdownTimer({ remainingMs, totalMs = 600000 }) {
     const s = (secs % 60).toString().padStart(2, "0");
     const pct = Math.min(1, 1 - remainingMs / totalMs);
     const isLow = secs < 60;
+
     return (
-        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 6 }}>
-            <div style={{
-                fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "2.2rem",
-                color: isLow ? "#FF3B5C" : "#0052B4", textShadow: `0 0 16px ${isLow ? "rgba(255,59,92,0.5)" : "rgba(0,240,255,0.4)"}`
-            }}>
+        <div className="flex flex-col items-end gap-1 border border-border/50 bg-[#0A0B0E] px-4 py-2">
+            <div className={`font-mono font-bold text-xl tracking-widest ${isLow ? "text-[#FF3B5C]" : "text-white"}`}>
                 {m}:{s}
             </div>
-            <div style={{ width: 90, height: 3, background: "rgba(26,30,42,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                <motion.div animate={{ scaleX: pct }} style={{ height: "100%", background: isLow ? "#FF3B5C" : "#0052B4", borderRadius: 2, originX: 0 }} />
+            <div className="w-20 h-0.5 bg-border/50">
+                <motion.div animate={{ scaleX: pct }} className={`h-full ${isLow ? "bg-[#FF3B5C]" : "bg-[#0066FF]"} origin-left`} />
             </div>
         </div>
     );
@@ -189,57 +191,50 @@ export default function SpectatePage() {
 
     return (
         <div className="min-h-screen grid-bg px-4 py-10 relative">
-            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] pointer-events-none"
-                style={{ background: "radial-gradient(ellipse, rgba(0,240,255,0.04) 0%, transparent 70%)" }} />
+            <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] pointer-events-none opacity-[0.02] bg-[#0066FF] blur-[80px]" />
             <div className="noise-overlay" />
 
             {/* Header */}
-            <div style={{ textAlign: "center", marginBottom: 28 }}>
-                <h1 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "2.5rem", color: "#E8EAF0" }}>
-                    👁 Spectate Mode
-                </h1>
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "#5A6178", marginTop: 6 }}>
-                    Watch live AI trading battles in real-time · No wallet required
-                </p>
-                {ws.connected ? (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                        <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#00E676" }} />
-                        <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#00E676" }}>Connected</span>
+            <div className="max-w-4xl mx-auto mb-10 flex flex-col items-center">
+                <Link href="/" className="self-start mb-6 flex items-center gap-2 group">
+                    <div className="w-8 h-8 flex items-center justify-center border border-border/50 group-hover:bg-white group-hover:text-black transition-all">
+                        <span className="text-sm">←</span>
                     </div>
-                ) : (
-                    <div style={{ display: "inline-flex", alignItems: "center", gap: 6, marginTop: 8 }}>
-                        <div style={{ width: 6, height: 6, borderRadius: "50%", background: "#FF3B5C" }} />
-                        <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#FF3B5C" }}>Reconnecting...</span>
+                    <span className="terminal-text text-muted group-hover:text-white transition-colors text-xs font-bold uppercase tracking-widest">Back to Arena</span>
+                </Link>
+                <div className="text-center w-full pb-6 border-b border-border/50">
+                    <h1 className="font-display font-black text-3xl md:text-5xl text-white uppercase tracking-tight">
+                        GLOBAL TELEMETRY
+                    </h1>
+                    <p className="font-mono text-[10px] text-muted mt-3 uppercase tracking-[0.2em]">
+                        Live Unbiased Spectate Stream · Read Only Access
+                    </p>
+                    <div className="inline-flex items-center gap-2 mt-4 px-3 py-1 bg-[#0A0B0E] border border-border/50">
+                        <div className={`w-1.5 h-1.5 ${ws.connected ? "bg-[#00E676] animate-pulse" : "bg-[#FF3B5C]"}`} />
+                        <span className={`font-mono text-[9px] uppercase tracking-widest ${ws.connected ? "text-[#00E676]" : "text-[#FF3B5C]"}`}>
+                            {ws.connected ? "System Online" : "Reconnection Pending..."}
+                        </span>
                     </div>
-                )}
+                </div>
             </div>
 
             {/* Arena picker */}
-            <div style={{ maxWidth: 900, margin: "0 auto 24px auto" }}>
-                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 10 }}>Live Arenas</div>
+            <div className="max-w-4xl mx-auto mb-10">
+                <div className="font-mono text-[10px] text-white uppercase tracking-widest mb-4">Available Streams</div>
                 {arenas.length === 0 ? (
-                    <div className="glass-card p-8 text-center">
-                        <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "#5A6178" }}>No active arenas — start one from the main app</p>
+                    <div className="p-8 text-center border border-border/50 bg-[#0A0B0E]/80 backdrop-blur-md">
+                        <p className="font-mono text-[10px] text-muted tracking-widest uppercase">No Active Combat Zones Detected</p>
                     </div>
                 ) : (
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                    <div className="flex flex-wrap gap-3">
                         {arenas.map((a) => (
                             <button key={a.id} onClick={() => handleSelectArena(a.id)}
-                                style={{
-                                    padding: "8px 16px", borderRadius: 10, cursor: "pointer",
-                                    background: selected === a.id ? "rgba(0,240,255,0.1)" : "rgba(13,15,20,0.7)",
-                                    border: `1px solid ${selected === a.id ? "rgba(0,240,255,0.4)" : "rgba(26,30,42,0.6)"}`,
-                                    color: selected === a.id ? "#0052B4" : "#E8EAF0",
-                                    fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem",
-                                    display: "flex", alignItems: "center", gap: 8,
-                                }}>
-                                <div style={{
-                                    width: 6, height: 6, borderRadius: "50%",
-                                    background: a.status === "active" ? "#FF3B5C" : a.status === "waiting" ? "#FACC15" : "#5A6178",
-                                    animation: a.status === "active" ? "pulse 1.5s infinite" : "none",
-                                }} />
-                                {a.id.slice(0, 8)} · {a.userCount || 0} users
-                                {a.isPrivate && <span style={{ color: "#A855F7" }}>🔒</span>}
+                                className={`px-4 py-2 border font-mono text-[10px] uppercase tracking-widest flex items-center gap-3 transition-colors duration-200
+                                    ${selected === a.id ? "bg-[#0066FF]/10 border-[#0066FF]/50 text-[#0066FF]" : "bg-[#0A0B0E]/80 border-border/50 text-muted hover:border-border hover:text-white"}
+                                `}>
+                                <div className={`w-1.5 h-1.5 ${a.status === "active" ? "bg-[#FF3B5C] animate-pulse" : a.status === "waiting" ? "bg-[#FFB000]" : "bg-muted"}`} />
+                                UID:{a.id.slice(0, 6)} <span className="opacity-50">|</span> {a.userCount || 0} CON
+                                {a.isPrivate && <span className="text-[#0066FF]">🔒</span>}
                             </button>
                         ))}
                     </div>
@@ -248,30 +243,28 @@ export default function SpectatePage() {
 
             {/* Arena view */}
             {view && (
-                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                    style={{ maxWidth: 900, margin: "0 auto" }}>
+                <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+                    className="max-w-6xl mx-auto">
 
                     {/* Status header */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18, flexWrap: "wrap", gap: 12 }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                    <div className="flex justify-between items-end mb-6 pb-4 border-b border-border/30">
+                        <div className="flex items-center gap-4">
                             {view.status === "active" && (
-                                <>
-                                    <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#FF3B5C" }} />
-                                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#FF3B5C" }}>LIVE</span>
-                                </>
+                                <div className="flex items-center gap-2 bg-[#FF3B5C]/10 border border-[#FF3B5C]/30 px-3 py-1">
+                                    <div className="w-1.5 h-1.5 bg-[#FF3B5C] animate-pulse" />
+                                    <span className="font-mono text-[10px] text-[#FF3B5C] tracking-widest uppercase">Live</span>
+                                </div>
                             )}
                             {view.status === "waiting" && (
-                                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#FACC15" }}>⏳ FILLING</span>
+                                <span className="font-mono text-[10px] text-[#FFB000] border border-[#FFB000]/30 px-3 py-1 bg-[#FFB000]/10 tracking-widest uppercase">Awaiting Genesis</span>
                             )}
                             {view.status === "completed" && (
-                                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#00E676" }}>✓ COMPLETED</span>
+                                <span className="font-mono text-[10px] text-[#00E676] border border-[#00E676]/30 px-3 py-1 bg-[#00E676]/10 tracking-widest uppercase">Cycle Complete</span>
                             )}
                             {view.isPrivate && (
-                                <span style={{
-                                    fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#A855F7",
-                                    background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)",
-                                    padding: "2px 8px", borderRadius: 4
-                                }}>🔒 PRIVATE ARENA</span>
+                                <span className="font-mono text-[10px] text-[#0066FF] px-3 py-1 bg-[#0066FF]/10 border border-[#0066FF]/30 tracking-widest uppercase">
+                                    Encrypted Payload
+                                </span>
                             )}
                         </div>
                         {view.status === "active" && <CountdownTimer remainingMs={remainingMs} />}
@@ -279,7 +272,7 @@ export default function SpectatePage() {
 
                     {/* Leaderboard */}
                     {view.leaderboard?.length > 0 && (
-                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
                             {view.leaderboard.map((agent, i) => (
                                 <LeaderboardCard key={agent.agentId} agent={agent} rank={i} />
                             ))}
@@ -288,25 +281,25 @@ export default function SpectatePage() {
 
                     {/* Arena waiting state */}
                     {view.status === "waiting" && (
-                        <div className="glass-card p-8 text-center mb-5">
-                            <p style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 6 }}>
-                                Waiting for fighters...
+                        <div className="p-8 text-center mb-8 border border-border/50 bg-[#0A0B0E]/80 backdrop-blur-md">
+                            <p className="font-display font-medium text-white uppercase tracking-widest mb-2">
+                                Synchronization Pending
                             </p>
-                            <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#5A6178" }}>
-                                {view.userCount}/{3} slots filled ·{" "}
-                                {Object.values(view.agentSelections || {}).filter(Boolean).length}/3 agents selected
+                            <p className="font-mono text-[10px] text-muted tracking-widest uppercase">
+                                {view.userCount}/3 Agents Joined ·{" "}
+                                {Object.values(view.agentSelections || {}).filter(Boolean).length}/3 Protocols Finalized
                             </p>
                         </div>
                     )}
 
                     {/* Completed results */}
                     {view.status === "completed" && view.results && (
-                        <div className="glass-card p-6 mb-5 glow-gold" style={{ border: "1px solid rgba(255,215,0,0.3)", textAlign: "center" }}>
-                            <div style={{ fontSize: "2.5rem", marginBottom: 6 }}>🏆</div>
-                            <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: "#FFD700", fontSize: "1.5rem" }}>
-                                {AGENT_COLORS[view.results.winner?.agentId]?.icon} {view.results.winner?.name} Won!
+                        <div className="p-8 mb-8 border border-[#FFB000]/30 bg-[#FFB000]/5 text-center">
+                            <div className="text-3xl mb-4">🏆</div>
+                            <div className="font-display font-bold text-white text-2xl uppercase tracking-widest mb-1">
+                                {AGENT_COLORS[view.results.winner?.agentId]?.icon} {view.results.winner?.name}
                             </div>
-                            <div style={{ fontFamily: "JetBrains Mono, monospace", color: "#00E676", fontSize: "1.1rem", fontWeight: 700 }}>
+                            <div className="font-mono text-xl tracking-widest font-bold text-[#00E676]">
                                 +{view.results.winner?.roi?.toFixed(2)}% ROI
                             </div>
                         </div>
@@ -314,18 +307,22 @@ export default function SpectatePage() {
 
                     {/* 2-col: trade feed + reasoning */}
                     {view.status === "active" && (
-                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                            <div>
-                                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 8, fontSize: "0.85rem" }}>
-                                    Trade Feed
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start pb-24 h-[600px]">
+                            <div className="bg-[#0A0B0E]/80 border border-border/50 p-6 flex flex-col h-full">
+                                <div className="font-mono text-[10px] text-white uppercase tracking-widest mb-6 border-b border-border/50 pb-4">
+                                    Global Trade Ledger
                                 </div>
-                                <TradeLog trades={tradeLog} />
+                                <div className="flex-1 overflow-y-auto">
+                                    <TradeLog trades={tradeLog} />
+                                </div>
                             </div>
-                            <div>
-                                <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: "#E8EAF0", marginBottom: 8, fontSize: "0.85rem" }}>
-                                    {view.isPrivate ? "🔒 Private Strategy" : "Agent Reasoning"}
+                            <div className="bg-[#0A0B0E]/80 border border-border/50 p-6 flex flex-col h-full">
+                                <div className="font-mono text-[10px] text-white uppercase tracking-widest mb-6 border-b border-border/50 pb-4">
+                                    {view.isPrivate ? "Encrypted State Log" : "Strategy Reasoning Stream"}
                                 </div>
-                                <ReasoningPanel log={reasoningLog} isPrivate={view.isPrivate} />
+                                <div className="flex-1 overflow-y-auto">
+                                    <ReasoningPanel log={reasoningLog} isPrivate={view.isPrivate} />
+                                </div>
                             </div>
                         </div>
                     )}

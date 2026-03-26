@@ -1,12 +1,11 @@
 "use client";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useArena } from "@/context/ArenaContext";
 
 const AGENT_COLORS = {
-    "whale-follower": { color: "#0052B4", bg: "rgba(59,130,246,0.1)", icon: "WF" },
-    "momentum-trader": { color: "#F97316", bg: "rgba(249,115,22,0.1)", icon: "MT" },
-    "risk-guard": { color: "#22C55E", bg: "rgba(34,197,94,0.1)", icon: "RG" },
+    "whale-follower": { color: "#0066FF", icon: "WF" },
+    "momentum-trader": { color: "#FF4500", icon: "MT" },
+    "risk-guard": { color: "#00E676", icon: "RG" },
 };
 
 function truncateTx(hash) {
@@ -15,10 +14,14 @@ function truncateTx(hash) {
 }
 
 function actionBadge(action) {
-    const map = { BUY: { bg: "rgba(0,230,118,0.12)", color: "#00E676" }, SELL: { bg: "rgba(255,59,92,0.12)", color: "#FF3B5C" }, HOLD: { bg: "rgba(90,97,120,0.12)", color: "#5A6178" } };
+    const map = {
+        BUY: { color: "text-success", border: "border-success/30" },
+        SELL: { color: "text-error", border: "border-error/30" },
+        HOLD: { color: "text-muted", border: "border-muted/30" }
+    };
     const s = map[action?.toUpperCase()] || map.HOLD;
     return (
-        <span style={{ ...s, padding: "2px 8px", borderRadius: 4, fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+        <span className={`px-2 py-0.5 font-mono text-xs font-bold uppercase tracking-widest border ${s.color} ${s.border}`}>
             {action}
         </span>
     );
@@ -27,66 +30,60 @@ function actionBadge(action) {
 export default function TradeLog({ trades = [], explorerUrl }) {
     if (!trades.length) {
         return (
-            <div className="glass-card p-4" style={{ height: 260, display: "flex", alignItems: "center", justifyContent: "center" }}>
-                <div style={{ textAlign: "center" }}>
-                    <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#0052B4", margin: "0 auto 8px" }} />
-                    <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.75rem", color: "#5A6178" }}>Waiting for first trade...</p>
-                </div>
+            <div className="h-full w-full flex flex-col items-center justify-center p-10 opacity-30">
+                <div className="w-1 h-10 bg-primary animate-pulse" />
+                <p className="terminal-text mt-4">AWAITING_INPUT</p>
             </div>
         );
     }
 
     return (
-        <div className="glass-card overflow-hidden" style={{ height: 260, display: "flex", flexDirection: "column" }}>
-            <div style={{ padding: "12px 16px", borderBottom: "1px solid rgba(26,30,42,0.6)", display: "flex", alignItems: "center", gap: 8 }}>
-                <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: "#0052B4" }} />
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#0052B4", textTransform: "uppercase", letterSpacing: "0.08em" }}>
-                    Live Trade Feed
-                </span>
-            </div>
-            <div style={{ overflowY: "auto", flex: 1 }}>
-                <AnimatePresence initial={false}>
-                    {trades.map((t, i) => {
-                        const meta = AGENT_COLORS[t.agentId] || { color: "#0052B4", bg: "rgba(0,240,255,0.05)", icon: "AI" };
-                        const txLink = t.txHash && !t.txHash.startsWith("0xdemo")
-                            ? `${explorerUrl || "https://www.okx.com/explorer/xlayer"}/tx/${t.txHash}` : null;
-                        return (
-                            <motion.div key={`${t.txHash}-${i}`}
-                                initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }}
-                                exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
-                                style={{
-                                    display: "flex", alignItems: "center", gap: 10, padding: "9px 14px",
-                                    borderBottom: "1px solid rgba(26,30,42,0.3)", background: i === 0 ? meta.bg : "transparent",
-                                    transition: "background 0.5s"
-                                }}>
-                                <span style={{ fontSize: "1rem" }}>{meta.icon}</span>
-                                <div style={{ flex: 1, minWidth: 0 }}>
-                                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                                        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontSize: "0.75rem", color: meta.color, fontWeight: 600 }}>
-                                            {t.agentName || t.agentId}
-                                        </span>
-                                        {actionBadge(t.action || "—")}
-                                        {t.token && <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#5A6178" }}>{t.token}</span>}
-                                    </div>
-                                    {t.reason && (
-                                        <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "rgba(90,97,120,0.6)", marginTop: 2, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
-                                            {t.reason}
-                                        </div>
-                                    )}
+        <div className="h-full flex flex-col">
+            <AnimatePresence initial={false}>
+                {trades.map((t, i) => {
+                    const meta = AGENT_COLORS[t.agentId] || { color: "#0066FF", icon: "AI" };
+                    const txLink = t.txHash && !t.txHash.startsWith("0xdemo")
+                        ? `${explorerUrl || "https://www.okx.com/explorer/xlayer"}/tx/${t.txHash}` : null;
+                    return (
+                        <motion.div key={`${t.txHash}-${i}`}
+                            initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0 }} transition={{ duration: 0.2 }}
+                            className="flex items-start gap-6 py-6 border-b border-white/5 transition-colors hover:bg-white/[0.02]">
+
+                            <div className="w-10 h-10 flex items-center justify-center font-mono font-bold text-xs border border-border bg-black shrink-0" style={{ color: meta.color }}>
+                                {meta.icon}
+                            </div>
+
+                            <div className="flex-1 min-w-0">
+                                <div className="flex items-center gap-3 mb-2">
+                                    <span className="font-display text-sm font-bold uppercase tracking-wider text-white">
+                                        {t.agentName || t.agentId}
+                                    </span>
+                                    {actionBadge(t.action || "—")}
+                                    {t.token && <span className="font-mono text-xs text-muted tracking-widest font-bold">{t.token}</span>}
                                 </div>
+                                {t.reason && (
+                                    <div className="font-mono text-xs text-muted/60 leading-relaxed uppercase tracking-wider font-bold">
+                                        {t.reason}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="shrink-0 flex flex-col items-end gap-2">
+                                <div className="font-mono text-sm text-white font-bold opacity-80">$2,410.20</div>
                                 {txLink ? (
                                     <a href={txLink} target="_blank" rel="noopener noreferrer"
-                                        style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#0052B4", whiteSpace: "nowrap" }}>
-                                        {truncateTx(t.txHash)} ↗
+                                        className="terminal-text text-primary hover:text-white transition-colors border-b border-primary/30 pb-0.5">
+                                        TX:{truncateTx(t.txHash)} ↗
                                     </a>
                                 ) : (
-                                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "rgba(90,97,120,0.4)" }}>sim</span>
+                                    <span className="terminal-text text-muted/30">SIMULATED</span>
                                 )}
-                            </motion.div>
-                        );
-                    })}
-                </AnimatePresence>
-            </div>
+                            </div>
+                        </motion.div>
+                    );
+                })}
+            </AnimatePresence>
         </div>
     );
 }

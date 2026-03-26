@@ -1,32 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAccount } from "wagmi";
 import { useArena } from "@/context/ArenaContext";
 import { api } from "@/utils/api";
 
 const AGENT_META_MAP = {
-    "whale-follower": { name: "Whale Follower", icon: "🐋", color: "#3B82F6" },
-    "momentum-trader": { name: "Momentum Trader", icon: "🚀", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "🛡️", color: "#22C55E" },
+    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0066FF" },
+    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#FF4500" },
+    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#00E676" },
 };
 
-/**
- * CopyWinner — post-arena popup to clone winning agent strategy.
- * Appears on Results screen when winner is determined.
- */
 export default function CopyWinner({ winner, isPrivate = false }) {
     const { address } = useAccount();
-    const { setCopyTradeSession, config } = useArena();
+    const { setCopyTradeSession, config, copyTradeLog } = useArena();
     const [capital, setCapital] = useState(config?.entryFeeUsd ?? 0.5);
     const [isLoading, setIsLoading] = useState(false);
     const [started, setStarted] = useState(false);
     const [error, setError] = useState(null);
     const [show, setShow] = useState(true);
+    const logEndRef = useRef(null);
 
-    const meta = AGENT_META_MAP[winner?.agentId] || { name: winner?.name || "Unknown", icon: "🤖", color: "#0052B4" };
+    const meta = AGENT_META_MAP[winner?.agentId] || { name: winner?.name || "Unknown", icon: "AI", color: "#0066FF" };
     const minCapital = config?.entryFeeUsd ?? 0.5;
+
+    useEffect(() => {
+        if (logEndRef.current) {
+            logEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [copyTradeLog]);
 
     const handleCopy = async () => {
         if (!address || !winner?.agentId) return;
@@ -48,133 +51,135 @@ export default function CopyWinner({ winner, isPrivate = false }) {
     return (
         <AnimatePresence>
             <motion.div
-                initial={{ opacity: 0, y: 30, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                className="glass-card overflow-hidden"
-                style={{
-                    border: `1px solid ${meta.color}44`,
-                    boxShadow: `0 0 40px ${meta.color}18`,
-                }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className="bg-surface border border-border overflow-hidden relative shadow-2xl"
             >
-                {/* Top bar */}
-                <div style={{ height: 4, background: `linear-gradient(90deg, ${meta.color}, transparent)` }} />
+                <div className="h-1 w-full bg-primary/20">
+                    <motion.div className="h-full bg-primary" initial={{ width: 0 }} animate={{ width: "100%" }} transition={{ duration: 1 }} />
+                </div>
 
-                <div style={{ padding: "20px 24px" }}>
+                <div className="p-10">
                     {started ? (
-                        // ──── Success state ────
-                        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-                            <div style={{ fontSize: "2.5rem", marginBottom: 8 }}>📋</div>
-                            <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: "#00E676", fontSize: "1.1rem", marginBottom: 4 }}>
-                                Copy Trading Active!
-                            </div>
-                            <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#5A6178", marginBottom: 12 }}>
-                                {meta.icon} {meta.name} is now trading ${capital} on your behalf
-                            </p>
-                            <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
-                                <div style={{ padding: "5px 12px", borderRadius: 6, background: "rgba(0,230,118,0.1)", border: "1px solid rgba(0,230,118,0.3)" }}>
-                                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#00E676" }}>
-                                        AUTO-TRADING · {isPrivate ? "🔒 PRIVATE" : "👁 PUBLIC"}
-                                    </span>
+                        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="py-2">
+                            <div className="flex items-center justify-between mb-8 border-b border-border pb-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="w-10 h-10 border border-success bg-success/5 flex items-center justify-center font-mono font-bold text-lg text-success">
+                                        ✓
+                                    </div>
+                                    <div>
+                                        <h3 className="font-display font-black text-xl text-white uppercase tracking-tighter">Node_Linked</h3>
+                                        <div className="terminal-text text-success flex items-center gap-2">
+                                            <div className="w-1.5 h-1.5 bg-success animate-pulse rounded-full" />
+                                            Active_Cloning_Stream
+                                        </div>
+                                    </div>
+                                </div>
+                                <div className="text-right">
+                                    <div className="terminal-text text-muted text-[9px] mb-1">Cap Allocation</div>
+                                    <div className="font-mono text-lg font-bold text-white">${capital} USDC</div>
                                 </div>
                             </div>
+
+                            {/* Live Terminal Feed */}
+                            <div className="bg-black border border-border p-4 h-48 overflow-y-auto mb-8 custom-scrollbar">
+                                <div className="terminal-text text-muted mb-4 opacity-50 flex items-center gap-2">
+                                    <span className="w-2 h-2 bg-primary animate-pulse" />
+                                    [INITIALIZING_TELEMETRY_FEED...]
+                                </div>
+                                {copyTradeLog.length === 0 ? (
+                                    <div className="h-full flex items-center justify-center">
+                                        <span className="terminal-text text-muted/30 italic">Awaiting Synchronized Signals...</span>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {copyTradeLog.map((log, i) => (
+                                            <div key={i} className="font-mono text-[9px] leading-relaxed border-l border-primary/20 pl-3">
+                                                <div className="flex justify-between text-muted/60 mb-0.5">
+                                                    <span>{new Date(log.timestamp).toLocaleTimeString()}</span>
+                                                    <span className="text-primary">{log.status === "decided" ? "STRAT_EXEC" : "TRADE_CONF"}</span>
+                                                </div>
+                                                <div className="text-white">
+                                                    {log.status === "decided" ? (
+                                                        <span className="text-primary font-bold">{log.action} {log.token} @ {log.confidence?.toFixed(2)}</span>
+                                                    ) : (
+                                                        <span>{log.action} {log.token}: ${log.amountUsdc?.toFixed(2)} | ROI: {log.roi?.toFixed(2)}%</span>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        ))}
+                                        <div ref={logEndRef} />
+                                    </div>
+                                )}
+                            </div>
+
+                            <button onClick={() => setShow(false)} className="w-full py-3 border border-border terminal-text text-muted hover:text-white transition-colors">
+                                Dissolve Connection
+                            </button>
                         </motion.div>
                     ) : (
-                        // ──── Setup state ────
                         <>
-                            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 16 }}>
-                                <span style={{ fontSize: "2rem" }}>{meta.icon}</span>
-                                <div>
-                                    <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: "#E8EAF0", fontSize: "1rem" }}>
-                                        Copy Winning Agent
+                            <div className="flex items-center justify-between mb-8">
+                                <div className="flex items-center gap-6">
+                                    <div className="w-12 h-12 border border-border bg-black flex items-center justify-center font-mono font-bold text-xl" style={{ color: meta.color }}>
+                                        {meta.icon}
                                     </div>
-                                    <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: meta.color }}>
-                                        {meta.name} · ROI: {winner?.roi >= 0 ? "+" : ""}{winner?.roi?.toFixed(2)}%
+                                    <div>
+                                        <h4 className="font-display font-black text-xl text-white uppercase tracking-tighter">Clone Winning Signal</h4>
+                                        <div className="terminal-text text-primary mt-1">{meta.name} · ROI: {winner?.roi?.toFixed(2)}%</div>
                                     </div>
                                 </div>
-                                <button onClick={() => setShow(false)} style={{ marginLeft: "auto", color: "#5A6178", fontSize: "1.1rem", background: "none", border: "none", cursor: "pointer" }}>
-                                    ✕
-                                </button>
+                                <button onClick={() => setShow(false)} className="terminal-text text-muted hover:text-white transition-colors">Abort</button>
                             </div>
 
-                            <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "0.825rem", color: "#5A6178", marginBottom: 16, lineHeight: 1.5 }}>
-                                Clone this winning strategy and let it trade autonomously with your capital.
-                                Uses the same AI logic outside the competition arena.
+                            <p className="font-mono text-[10px] text-muted leading-loose uppercase tracking-widest mb-10 opacity-70">
+                                Synchronize your capital with this winning strategy. This node will execute high-frequency trades autonomously on your behalf.
                             </p>
 
-                            {/* Capital input */}
-                            <div style={{ marginBottom: 14 }}>
-                                <label style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#5A6178", display: "block", marginBottom: 6 }}>
-                                    ALLOCATE CAPITAL (USDC)
-                                </label>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <input
-                                        type="number"
-                                        value={capital}
-                                        min={minCapital}
-                                        step={0.5}
-                                        onChange={(e) => setCapital(Math.max(minCapital, parseFloat(e.target.value) || minCapital))}
-                                        style={{
-                                            flex: 1, padding: "9px 12px",
-                                            background: "rgba(13,15,20,0.8)", border: "1px solid rgba(26,30,42,0.8)",
-                                            borderRadius: 8, color: "#E8EAF0",
-                                            fontFamily: "JetBrains Mono, monospace", fontSize: "0.85rem",
-                                            outline: "none",
-                                        }}
-                                    />
-                                    {["1", "5", "10"].map((v) => (
-                                        <button key={v} onClick={() => setCapital(parseFloat(v))}
-                                            style={{
-                                                padding: "6px 10px", borderRadius: 6, cursor: "pointer",
-                                                background: capital === parseFloat(v) ? "rgba(0,240,255,0.1)" : "rgba(26,30,42,0.5)",
-                                                border: `1px solid ${capital === parseFloat(v) ? "rgba(0,240,255,0.3)" : "rgba(26,30,42,0.5)"}`,
-                                                color: capital === parseFloat(v) ? "#0052B4" : "#5A6178",
-                                                fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem",
-                                            }}>
-                                            ${v}
-                                        </button>
-                                    ))}
+                            <div className="space-y-8">
+                                <div>
+                                    <label className="terminal-text text-muted mb-3 block">Node Allocation (USDC)</label>
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="number"
+                                            value={capital}
+                                            min={minCapital}
+                                            step={0.5}
+                                            onChange={(e) => setCapital(Math.max(minCapital, parseFloat(e.target.value) || minCapital))}
+                                            className="flex-1 bg-black border border-border p-4 font-mono text-sm text-white focus:border-primary outline-none transition-colors"
+                                        />
+                                        <div className="flex gap-1">
+                                            {["5", "10", "25"].map((v) => (
+                                                <button key={v} onClick={() => setCapital(parseFloat(v))}
+                                                    className={`px-4 py-4 font-mono text-[10px] border transition-all ${capital === parseFloat(v) ? "bg-primary text-black border-primary" : "border-border text-muted hover:border-white"}`}>
+                                                    ${v}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* Mode indicator */}
-                            <div style={{
-                                marginBottom: 16, padding: "8px 12px", borderRadius: 8,
-                                background: isPrivate ? "rgba(168,85,247,0.06)" : "rgba(0,240,255,0.04)",
-                                border: `1px solid ${isPrivate ? "rgba(168,85,247,0.2)" : "rgba(0,240,255,0.15)"}`,
-                                display: "flex", alignItems: "center", gap: 8,
-                            }}>
-                                <span style={{ fontSize: "0.9rem" }}>{isPrivate ? "🔒" : "👁️"}</span>
-                                <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: isPrivate ? "#A855F7" : "#0052B4" }}>
-                                    {isPrivate ? "PRIVATE — strategy hidden via Venice AI" : "TRANSPARENT — reasoning visible to all"}
+                                <div className="p-4 border border-border bg-black/40 flex items-center gap-4">
+                                    <div className={`w-2 h-2 rounded-full ${isPrivate ? "bg-primary animate-pulse" : "bg-white/20"}`} />
+                                    <div className="terminal-text text-muted">
+                                        {isPrivate ? "ENCRYPTED_STREAM_ACTIVE" : "TRANSPARENT_LIQUID_REASONING"}
+                                    </div>
                                 </div>
+
+                                {error && (
+                                    <div className="p-4 bg-error/10 border border-error/30 terminal-text text-error">
+                                        ERR: {error}
+                                    </div>
+                                )}
+
+                                <button
+                                    onClick={handleCopy}
+                                    disabled={isLoading || !address}
+                                    className="btn-primary w-full text-xs font-black tracking-[0.3em]">
+                                    {isLoading ? "Synchronizing..." : `LINK ${meta.name} LOGIC`}
+                                </button>
                             </div>
-
-                            {error && (
-                                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#FF3B5C", marginBottom: 12 }}>{error}</p>
-                            )}
-
-                            <button
-                                onClick={handleCopy}
-                                disabled={isLoading || !address}
-                                className="w-full"
-                                style={{
-                                    width: "100%", padding: "12px", borderRadius: 10,
-                                    background: isLoading ? "rgba(0,240,255,0.1)" : `linear-gradient(135deg, ${meta.color}, ${meta.color}cc)`,
-                                    border: "none", cursor: isLoading ? "default" : "pointer",
-                                    color: "#07080A", fontFamily: "Space Grotesk, sans-serif",
-                                    fontWeight: 700, fontSize: "0.95rem",
-                                    opacity: !address ? 0.5 : 1,
-                                    transition: "all 0.2s",
-                                }}
-                            >
-                                {isLoading ? "Starting..." : `📋 Copy ${meta.name}`}
-                            </button>
-                            {!address && (
-                                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#5A6178", textAlign: "center", marginTop: 6 }}>
-                                    Connect wallet to copy trade
-                                </p>
-                            )}
                         </>
                     )}
                 </div>

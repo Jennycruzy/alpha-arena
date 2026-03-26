@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 
 // In production: set NEXT_PUBLIC_BACKEND_WS_URL=wss://api.yourdomain.com/ws
 // In dev: automatically uses ws://localhost:4000/ws
@@ -75,5 +75,6 @@ export function useWebSocket() {
         }
     }, []);
 
-    return { connected, on, send };
+    const value = useMemo(() => ({ connected, on, send }), [connected, on, send]);
+    return value;
 }

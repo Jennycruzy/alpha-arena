@@ -10,6 +10,7 @@ import config from "../../config/index.js";
 export class MomentumTraderAgent extends BaseAgent {
   constructor() {
     super("Momentum Trader", "momentum-trader");
+    this.riskMultiplier = 2.0; // High risk, high reward potential
   }
 
   async fetchMarketData() {

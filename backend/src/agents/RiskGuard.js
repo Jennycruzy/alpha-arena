@@ -10,6 +10,7 @@ import config from "../../config/index.js";
 export class RiskGuardAgent extends BaseAgent {
   constructor() {
     super("Risk Guard", "risk-guard");
+    this.riskMultiplier = 0.8; // Low risk, capital preservation
   }
 
   async fetchMarketData() {

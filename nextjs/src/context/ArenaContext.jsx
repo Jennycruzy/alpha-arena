@@ -139,6 +139,9 @@ export function ArenaProvider({ children }) {
             ws.on("copy_trade_executed", (data) => {
                 setCopyTradeLog((p) => [data, ...p].slice(0, 50));
             }),
+            ws.on("copy_trade_reasoning", (data) => {
+                setCopyTradeLog((p) => [data, ...p].slice(0, 50));
+            }),
         ];
         return () => unsubs.forEach((fn) => fn?.());
     }, [ws, arenaId]);

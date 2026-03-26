@@ -3,50 +3,50 @@
 import { motion, AnimatePresence } from "framer-motion";
 
 const AGENT_COLORS = {
-    "whale-follower": { color: "#0052B4", icon: "WF" },
-    "momentum-trader": { color: "#FFB000", icon: "MT" },
+    "whale-follower": { color: "#0066FF", icon: "WF" },
+    "momentum-trader": { color: "#FF4500", icon: "MT" },
     "risk-guard": { color: "#00E676", icon: "RG" },
 };
 
 function ReasoningEntry({ entry, index }) {
-    const meta = AGENT_COLORS[entry.agentId] || { color: "#0066FF", icon: "🤖" };
-    const actionColors = { BUY: "#00E676", SELL: "#FF3B5C", HOLD: "#5A6178", EVOLVE: "#FACC15" };
+    const meta = AGENT_COLORS[entry.agentId] || { color: "#0066FF", icon: "WF" };
     const conf = entry.confidence ?? 0;
-    const ts = new Date(entry.timestamp).toLocaleTimeString("en", { hour12: false });
+    const ts = new Date(entry.timestamp || Date.now()).toLocaleTimeString("en", { hour12: false });
 
-    // 🧬 Render Evolution Events
+    // 🧬 Render Evolution Events (Level Up / Wisdom)
     if (entry.type === "level_up" || entry.type === "wisdom_gained") {
         const isLevelUp = entry.type === "level_up";
         return (
             <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                style={{
-                    border: `1px solid ${isLevelUp ? "#FACC15" : meta.color}55`,
-                    margin: "0 0 10px 0",
-                    padding: "10px 14px",
-                    background: `linear-gradient(90deg, ${isLevelUp ? "rgba(250,204,21,0.1)" : `${meta.color}15`}, transparent)`,
-                    borderRadius: 8,
-                    boxShadow: isLevelUp ? "0 0 15px rgba(250,204,21,0.15)" : "none"
-                }}
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0 }}
+                className={`mb-8 p-8 border-2 ${isLevelUp ? "border-primary bg-primary/5 shadow-[0_0_30px_rgba(0,102,255,0.1)]" : "border-white/10 bg-white/5"}`}
             >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                        <span style={{ fontSize: "1rem" }}>{isLevelUp ? "🎉" : "🧠"}</span>
-                        <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, color: isLevelUp ? "#FACC15" : meta.color, fontSize: "0.85rem", textTransform: "uppercase" }}>
-                            {isLevelUp ? `LEVEL UP! Now Lv.${entry.level}` : "Wisdom Gained"}
+                <div className="flex justify-between items-center mb-6 border-b border-white/5 pb-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`w-2 h-2 rounded-full ${isLevelUp ? "bg-primary animate-ping" : "bg-white/40"}`} />
+                        <span className={`font-display font-black text-xs tracking-[0.2em] uppercase ${isLevelUp ? "text-primary" : "text-white"}`}>
+                            {isLevelUp ? `AGENT_LEVEL_${entry.level}_UP` : "STRATEGY_WISDOM_GAINED"}
                         </span>
                     </div>
-                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>{ts}</span>
+                    <span className="font-mono text-[9px] text-muted opacity-50">{ts}</span>
                 </div>
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "0.8rem", color: "#E8EAF0", fontStyle: "italic", marginBottom: 8 }}>
-                    "{entry.lesson}"
-                </p>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "0.6rem", color: "#00E676" }}>+{entry.xpGained} XP</span>
-                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#64748B" }}>AGENT: {entry.agentName || entry.agentId}</span>
+
+                <div className="relative mb-6">
+                    <div className="absolute left-0 top-0 bottom-0 w-1 bg-primary/30" />
+                    <p className="font-mono text-xs leading-relaxed text-white uppercase tracking-wider pl-6 italic">
+                        "{entry.lesson || entry.latestWisdom}"
+                    </p>
+                </div>
+
+                <div className="flex justify-between items-center bg-black/60 p-4 border border-white/5">
+                    <div className="flex items-center gap-4">
+                        <span className="font-mono text-xs text-success font-bold tracking-widest">+ {entry.xpGained || 50} EXPERIENCE</span>
+                        <div className="w-px h-3 bg-white/10" />
+                        <span className="font-mono text-xs text-primary">LVL {entry.level || "?"}</span>
+                    </div>
+                    <span className="font-mono text-[10px] text-muted uppercase tracking-tighter">AGENT: {entry.agentName || entry.agentId}</span>
                 </div>
             </motion.div>
         );
@@ -54,73 +54,70 @@ function ReasoningEntry({ entry, index }) {
 
     return (
         <motion.div
-            initial={{ opacity: 0, x: -16, height: 0 }}
-            animate={{ opacity: 1, x: 0, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            transition={{ duration: 0.25 }}
-            style={{
-                borderLeft: `3px solid ${meta.color}`,
-                margin: "0 0 8px 0",
-                padding: "10px 14px",
-                background: `linear-gradient(90deg, ${meta.color}0a, transparent)`,
-                borderRadius: "0 8px 8px 0",
-            }}
+            initial={{ opacity: 0, x: -10 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0 }}
+            className="mb-8 p-6 bg-surface border border-border transition-all hover:bg-white/5 group"
         >
-            {/* Agent + timestamp row */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 5 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <span style={{ fontSize: "0.85rem" }}>{meta.icon}</span>
-                    <span style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta.color, fontSize: "0.8rem" }}>
+            <div className="flex justify-between items-center mb-6">
+                <div className="flex items-center gap-4">
+                    <div className="w-8 h-8 border border-border bg-black flex items-center justify-center font-mono font-bold text-[10px] group-hover:border-primary/50 transition-colors" style={{ color: meta.color }}>
+                        {meta.icon}
+                    </div>
+                    <span className="font-display font-bold text-xs tracking-widest uppercase" style={{ color: meta.color }}>
                         {entry.agentName || entry.agentId}
                     </span>
                     {entry.isPrivate && (
-                        <span style={{
-                            fontFamily: "JetBrains Mono, monospace", fontSize: "0.55rem", color: "#A855F7",
-                            background: "rgba(168,85,247,0.1)", border: "1px solid rgba(168,85,247,0.3)",
-                            padding: "1px 5px", borderRadius: 3, letterSpacing: "0.05em"
-                        }}>🔒 PRIVATE</span>
+                        <div className="flex items-center gap-2 px-2 py-0.5 bg-primary/10 border border-primary/20">
+                            <span className="w-1 h-1 bg-primary rounded-full animate-pulse" />
+                            <span className="font-mono text-[8px] text-primary tracking-widest">ENCRYPTED</span>
+                        </div>
                     )}
                 </div>
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>{ts}</span>
+                <span className="font-mono text-[9px] text-muted opacity-40">{ts}</span>
             </div>
 
-            {/* Reason (only if public mode) */}
             {entry.reason ? (
-                <p style={{ fontFamily: "DM Sans, sans-serif", fontSize: "0.78rem", color: "#C4C8D8", lineHeight: 1.45, marginBottom: 8 }}>
+                <p className="font-mono text-[10px] text-muted leading-relaxed mb-6 pl-5 border-l border-white/5 group-hover:text-white/80 transition-colors">
                     {entry.reason}
                 </p>
             ) : entry.isPrivate ? (
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "rgba(168,85,247,0.5)", marginBottom: 8, fontStyle: "italic" }}>
-                    [Reasoning hidden — private strategy via Venice]
-                </p>
+                <div className="mb-6 pl-5 border-l border-primary/20">
+                    <div className="font-mono text-[9px] text-primary/40 uppercase tracking-[0.3em] italic mb-2">
+                        [REASONING_PAYLOAD_ENCRYPTED]
+                    </div>
+                    <div className="w-32 h-0.5 bg-primary/10 relative overflow-hidden">
+                        <motion.div
+                            className="absolute top-0 bottom-0 left-0 bg-primary/40"
+                            initial={{ x: -128 }} animate={{ x: 128 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }}
+                            style={{ width: "40%" }}
+                        />
+                    </div>
+                </div>
             ) : null}
 
-            {/* Decision row */}
-            <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
+            <div className="flex items-center gap-8 bg-black/40 p-4 border border-white/5">
                 {entry.action && (
-                    <span style={{
-                        fontFamily: "JetBrains Mono, monospace", fontWeight: 700, fontSize: "0.7rem",
-                        color: actionColors[entry.action] || "#0066FF",
-                        background: `${actionColors[entry.action] || "#0066FF"}18`,
-                        padding: "2px 8px", borderRadius: 4, border: `1px solid ${actionColors[entry.action] || "#0066FF"}33`
-                    }}>{entry.action}</span>
+                    <div className="flex flex-col gap-1">
+                        <span className="font-mono text-[8px] text-muted uppercase tracking-widest">Execution</span>
+                        <span className="font-mono font-bold text-[10px] tracking-widest uppercase text-white">{entry.action}</span>
+                    </div>
                 )}
                 {entry.token && (
-                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#E8EAF0" }}>{entry.token}</span>
+                    <div className="flex flex-col gap-1">
+                        <span className="font-mono text-[8px] text-muted uppercase tracking-widest">Ticker</span>
+                        <span className="font-mono text-[10px] text-white tracking-widest font-black">{entry.token}</span>
+                    </div>
                 )}
-                {/* Confidence bar */}
                 {conf > 0 && (
-                    <div style={{ display: "flex", alignItems: "center", gap: 5, marginLeft: "auto" }}>
-                        <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>conf</span>
-                        <div style={{ width: 48, height: 3, background: "rgba(26,30,42,0.8)", borderRadius: 2, overflow: "hidden" }}>
-                            <div style={{
-                                height: "100%", borderRadius: 2,
-                                width: `${conf * 100}%`,
-                                background: conf > 0.7 ? "#00E676" : conf > 0.4 ? "#FACC15" : "#FF3B5C",
-                                transition: "width 0.3s",
-                            }} />
+                    <div className="flex flex-col gap-1 flex-1 max-w-[140px] ml-auto">
+                        <div className="flex justify-between items-center text-[8px] font-mono tracking-widest mb-1">
+                            <span className="text-muted/60 uppercase">Strategy_Confidence</span>
+                            <span className="text-primary font-black">{(conf * 100).toFixed(0)}%</span>
                         </div>
-                        <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#E8EAF0" }}>{(conf * 100).toFixed(0)}%</span>
+                        <div className="w-full h-1 bg-white/5 border border-white/10 overflow-hidden">
+                            <motion.div className="h-full bg-primary shadow-[0_0_5px_rgba(0,102,255,0.5)]" initial={{ width: 0 }} animate={{ width: `${conf * 100}%` }} transition={{ duration: 1 }} />
+                        </div>
                     </div>
                 )}
             </div>
@@ -130,64 +127,36 @@ function ReasoningEntry({ entry, index }) {
 
 export default function ReasoningPanel({ log = [], isPrivate = false, className = "" }) {
     return (
-        <div className={`glass-card overflow-hidden flex flex-col ${className}`}
-            style={{ height: 380 }}>
-
-            {/* Header */}
-            <div style={{
-                padding: "12px 16px",
-                borderBottom: "1px solid rgba(26,30,42,0.6)",
-                display: "flex", alignItems: "center", justifyContent: "space-between",
-                flexShrink: 0,
-            }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                    <div className="animate-pulse" style={{ width: 6, height: 6, borderRadius: "50%", background: isPrivate ? "#A855F7" : "#0066FF" }} />
-                    <span style={{
-                        fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem",
-                        color: isPrivate ? "#A855F7" : "#0066FF",
-                        textTransform: "uppercase", letterSpacing: "0.08em"
-                    }}>
-                        {isPrivate ? "🔒 Private Strategy" : "Agent Reasoning"}
-                    </span>
-                </div>
-                <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.6rem", color: "#5A6178" }}>
-                    {log.length} entries
-                </span>
-            </div>
-
-            {/* Log */}
-            <div style={{ overflowY: "auto", flex: 1, padding: "10px 14px" }}>
-                {log.length === 0 ? (
-                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", height: "100%", gap: 10 }}>
-                        {isPrivate ? (
-                            <div style={{ height: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", border: "1px solid rgba(21,34,56,0.4)", borderRadius: 12, background: "rgba(10,13,20,0.4)" }}>
-                                <div style={{ padding: 20, textAlign: "center" }}>
-                                    <div className="text-2xl font-mono text-[#0052B4]/50 mb-4 font-bold tracking-widest">ENCRYPTED</div>
-                                    <div style={{ color: "#E8EAF0", fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, fontSize: "1.1rem", marginBottom: 8 }}>
-                                        Private Arena Mode
-                                    </div>
-                                    <div style={{ color: "#5A6178", fontSize: "0.8rem", maxWidth: 220 }}>
-                                        Agent reasoning logs are encrypted and hidden from spectators.
-                                    </div>
-                                </div>
+        <div className={`h-full flex flex-col ${className}`}>
+            {log.length === 0 ? (
+                <div className="h-full flex flex-col items-center justify-center border border-white/5 bg-black/20 p-10">
+                    {isPrivate ? (
+                        <div className="text-center flex flex-col items-center">
+                            <div className="w-12 h-12 border border-primary/20 bg-primary/5 flex items-center justify-center mb-6">
+                                <span className="text-primary text-2xl animate-pulse">🔒</span>
                             </div>
-                        ) : (
-                            <>
-                                <div className="animate-pulse" style={{ width: 8, height: 8, borderRadius: "50%", background: "#0066FF" }} />
-                                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.7rem", color: "#5A6178" }}>
-                                    Waiting for agent reasoning...
-                                </p>
-                            </>
-                        )}
-                    </div>
-                ) : (
+                            <div className="font-display font-black text-sm text-primary uppercase tracking-[0.2em] mb-2">STRATEGY_SHIELD_ACTIVE</div>
+                            <p className="font-mono text-xs text-muted/40 uppercase tracking-[0.3em] font-bold">Strategy isolated via Venice Protocol</p>
+                        </div>
+                    ) : (
+                        <div className="flex flex-col items-center gap-8 opacity-40">
+                            <div className="w-16 h-[1px] bg-primary relative overflow-hidden">
+                                <motion.div className="absolute top-0 bottom-0 left-0 bg-white"
+                                    initial={{ x: -64 }} animate={{ x: 64 }} transition={{ repeat: Infinity, duration: 2 }} style={{ width: "40%" }} />
+                            </div>
+                            <p className="font-mono text-[9px] uppercase tracking-[0.5em] text-primary animate-pulse">Synchronizing_Streams...</p>
+                        </div>
+                    )}
+                </div>
+            ) : (
+                <div className="flex-1 overflow-y-auto w-full custom-scrollbar pr-4">
                     <AnimatePresence initial={false}>
                         {log.map((entry, i) => (
                             <ReasoningEntry key={`${entry.agentId}-${entry.timestamp}-${i}`} entry={entry} index={i} />
                         ))}
                     </AnimatePresence>
-                )}
-            </div>
+                </div>
+            )}
         </div>
     );
 }

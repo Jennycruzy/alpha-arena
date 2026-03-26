@@ -4,9 +4,9 @@ import { motion } from "framer-motion";
 import { useArena } from "@/context/ArenaContext";
 
 const AGENT_MAP = {
-    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0052B4" },
-    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#F97316" },
-    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#22C55E" },
+    "whale-follower": { name: "Whale Follower", icon: "WF", color: "#0066FF" },
+    "momentum-trader": { name: "Momentum Trader", icon: "MT", color: "#FF4500" },
+    "risk-guard": { name: "Risk Guard", icon: "RG", color: "#00E676" },
 };
 
 export default function WaitingRoom() {
@@ -15,78 +15,68 @@ export default function WaitingRoom() {
     const filled = allAgentIds.filter((id) => (agentSelections[id] || 0) > 0).length;
 
     return (
-        <div className="min-h-screen grid-bg flex flex-col items-center justify-center px-4 relative">
-            <div className="absolute inset-0 pointer-events-none"
-                style={{ background: "radial-gradient(ellipse at 50% 40%, rgba(168,85,247,0.05) 0%, transparent 60%)" }} />
+        <div className="min-h-screen grid-bg flex flex-col items-center justify-center px-6 relative bg-[#030406]">
 
-            {demoMode && <div className="demo-banner absolute top-6 right-6">DEMO MODE</div>}
+            {demoMode && (
+                <div className="absolute top-10 right-10 terminal-text text-primary border border-primary/30 px-4 py-2 bg-primary/5">
+                    Simulation_Mode_Active
+                </div>
+            )}
 
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                className="text-center z-10 max-w-lg">
+            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                className="text-center z-10 w-full max-w-2xl">
 
-                <motion.div animate={{ scale: [1, 1.15, 1] }} transition={{ repeat: Infinity, duration: 2 }}
-                    className="mx-auto mb-8" style={{
-                        width: 64, height: 64, borderRadius: "50%",
-                        border: "2px solid rgba(0,240,255,0.3)", display: "flex", alignItems: "center", justifyContent: "center"
-                    }}>
-                    <div style={{
-                        width: 32, height: 32, borderRadius: "50%", background: "rgba(0,240,255,0.1)",
-                        display: "flex", alignItems: "center", justifyContent: "center"
-                    }}>
-                        <div className="animate-pulse" style={{ width: 12, height: 12, borderRadius: "50%", background: "#0052B4" }} />
+                <div className="flex flex-col items-center mb-12">
+                    <div className="w-16 h-16 border border-primary/40 bg-primary/5 flex items-center justify-center mb-6">
+                        <div className="w-2 h-2 bg-primary animate-ping rounded-full" />
                     </div>
-                </motion.div>
-
-                <h2 style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "2rem", color: "#E8EAF0", marginBottom: 8 }}>
-                    Waiting for Fighters
-                </h2>
-                <p style={{ color: "#5A6178" }}>Arena starts when all 3 agents have at least 1 user</p>
-                <p style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: "#0052B4", marginTop: 6, marginBottom: 32 }}>
-                    {filled}/3 agents filled
-                </p>
-
-                {/* Progress bar */}
-                <div style={{ height: 4, background: "rgba(26,30,42,0.8)", borderRadius: 2, marginBottom: 28, overflow: "hidden" }}>
-                    <motion.div style={{ height: "100%", background: "linear-gradient(90deg, #0052B4, #A855F7)", borderRadius: 2 }}
-                        animate={{ width: `${(filled / 3) * 100}%` }} transition={{ duration: 0.4 }} />
+                    <h2 className="font-display font-black text-4xl md:text-5xl text-white tracking-tighter uppercase mb-4">
+                        AWAITING_COMBATANTS
+                    </h2>
+                    <p className="terminal-text text-muted text-xs font-bold uppercase tracking-widest">Initiating sequence requires 3 synchronized strategy agents</p>
                 </div>
 
-                {/* Agent slots */}
-                <div style={{ display: "flex", flexDirection: "column", gap: 12, marginBottom: 24 }}>
+                <div className="flex flex-col gap-px bg-border border border-border mb-12">
                     {allAgentIds.map((id, i) => {
                         const meta = AGENT_MAP[id];
                         const count = agentSelections[id] || 0;
                         const isFilled = count > 0;
                         const isYours = id === selectedAgent;
                         return (
-                            <motion.div key={id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 * i }}
-                                style={{ display: "flex", alignItems: "center", justifyContent: "space-between", padding: "14px 16px", background: "rgba(26,30,42,0.4)", border: isYours ? `1px solid ${meta.color}` : "1px solid rgba(42,48,64,0.5)", borderRadius: 12, boxShadow: isYours ? `0 0 20px ${meta.color}20` : "none" }}>
-                                <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", width: 40, height: 40, borderRadius: 10, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", color: meta.color, fontFamily: "Space Grotesk, sans-serif", fontWeight: 700, fontSize: "1.1rem" }}>{meta.icon}</div>
-                                    <div>
-                                        <div style={{ fontFamily: "Space Grotesk, sans-serif", fontWeight: 600, color: meta.color }}>
+                            <div key={id} className={`flex items-center justify-between p-10 bg-surface transition-all
+                                ${isYours ? "bg-primary/5" : ""}
+                            `}>
+                                <div className="flex items-center gap-8">
+                                    <div className="w-12 h-12 border border-border bg-black flex items-center justify-center font-mono font-bold text-sm" style={{ color: meta.color }}>
+                                        {meta.icon}
+                                    </div>
+                                    <div className="text-left">
+                                        <div className="font-display font-bold text-white uppercase tracking-wider text-lg">
                                             {meta.name}
                                         </div>
-                                        {isYours && <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "#0052B4" }}>YOUR PICK</div>}
+                                        {isYours && <div className="terminal-text text-primary mt-1 font-bold text-xs uppercase tracking-widest">LINKED_AGENT</div>}
                                     </div>
                                 </div>
-                                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                                    <div style={{
-                                        width: 8, height: 8, borderRadius: "50%", background: isFilled ? "#00E676" : "#5A6178",
-                                        animation: isFilled ? "none" : "pulse 2s infinite"
-                                    }} />
-                                    <span style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.8rem", color: isFilled ? "#00E676" : "#5A6178" }}>
-                                        {isFilled ? `${count} user${count > 1 ? "s" : ""}` : "Waiting..."}
+                                <div className="flex items-center gap-4">
+                                    <div className={`w-2 h-2 ${isFilled ? "bg-success" : "bg-white/10 animate-pulse"}`} />
+                                    <span className={`terminal-text ${isFilled ? "text-success" : "text-muted"}`}>
+                                        {isFilled ? `ACTIVE` : "WAITING..."}
                                     </span>
                                 </div>
-                            </motion.div>
+                            </div>
                         );
                     })}
                 </div>
 
+                <div className="w-full h-1 bg-white/5 relative overflow-hidden mb-12">
+                    <motion.div className="absolute top-0 bottom-0 left-0 bg-primary"
+                        animate={{ width: `${(filled / 3) * 100}%` }} transition={{ duration: 1 }} />
+                </div>
+
                 {arenaId && (
-                    <div style={{ fontFamily: "JetBrains Mono, monospace", fontSize: "0.65rem", color: "rgba(90,97,120,0.5)" }}>
-                        Arena: {arenaId.slice(0, 8)}...{arenaId.slice(-4)}
+                    <div className="flex items-center justify-between border-t border-border pt-6">
+                        <div className="terminal-text text-muted">Arena_ID: {arenaId}</div>
+                        <div className="terminal-text text-muted/30">PENDING_INIT</div>
                     </div>
                 )}
             </motion.div>

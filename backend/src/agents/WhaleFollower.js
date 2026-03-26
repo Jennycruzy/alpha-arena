@@ -10,6 +10,7 @@ import config from "../../config/index.js";
 export class WhaleFollowerAgent extends BaseAgent {
   constructor() {
     super("Whale Follower", "whale-follower");
+    this.riskMultiplier = 1.5; // Medium-High risk
   }
 
   async fetchMarketData() {

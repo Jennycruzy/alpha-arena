@@ -340,8 +340,10 @@ In ONE concise sentence (max 20 words), what single specific lesson should you a
     if (config.demoMode) {
       if (this.trades.length > 0) {
         // 🧬 Higher level agents get slightly better simulated performance
-        const levelEdge = (this.level - 1) * 0.001;  // +0.1% edge per level
-        const delta = this.currentBalance * ((Math.random() - 0.47 + levelEdge) * 0.015);
+        const levelEdge = (this.level - 1) * 0.002;  // +0.2% edge per level
+        const riskBias = (this.riskMultiplier || 1.0) * 0.035; // increased volatility
+        // heavily favor profit for demo: random() - 0.40 guarantees 60% win rate
+        const delta = this.currentBalance * ((Math.random() - 0.40 + levelEdge) * riskBias);
         this.currentBalance = Math.max(0, this.currentBalance + delta);
       }
       return;

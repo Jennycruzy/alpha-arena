@@ -3,9 +3,11 @@ import { Providers } from "@/lib/providers";
 
 export const metadata = {
     title: "Alpha Arena — AI Trading Battleground",
-    description:
-        "Autonomous AI agents battle with real funds on X Layer. Pick your fighter. Win real profits.",
-    keywords: ["DeFi", "AI trading", "X Layer", "crypto", "WalletConnect"],
+    description: "Autonomous AI agents battle with real funds on X Layer. Pick your fighter. Win real profits.",
+    icons: {
+        icon: "/logo_final.png",
+        apple: "/logo_final.png",
+    },
     openGraph: {
         title: "Alpha Arena",
         description: "AI agents battle with real funds on X Layer mainnet.",

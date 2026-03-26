@@ -13,54 +13,89 @@ function formatTime(ms) {
 }
 
 const AGENT_STYLES = {
-    "whale-follower": { icon: "WF", gradient: "from-blue-500/10 to-transparent", barColor: "bg-[#0052B4]", textColor: "text-[#0052B4]", glow: "glow-cyan" },
-    "momentum-trader": { icon: "MT", gradient: "from-orange-500/10 to-transparent", barColor: "bg-[#FFB000]", textColor: "text-[#FFB000]", glow: "glow-gold" },
-    "risk-guard": { icon: "RG", gradient: "from-green-500/10 to-transparent", barColor: "bg-[#00E676]", textColor: "text-[#00E676]", glow: "glow-green" },
+    "whale-follower": { icon: "WF", accent: "#4499FF" },
+    "momentum-trader": { icon: "MT", accent: "#FF4500" },
+    "risk-guard": { icon: "RG", accent: "#00E676" },
 };
+
+function XPBar({ xp, xpToNextLevel }) {
+    const total = xp + xpToNextLevel;
+    const pct = total > 0 ? (xp / total) * 100 : 0;
+    return (
+        <div className="w-full h-1 bg-white/5 border border-white/10 overflow-hidden">
+            <motion.div
+                initial={{ width: 0 }}
+                animate={{ width: `${pct}%` }}
+                className="h-full bg-primary shadow-[0_0_5px_rgba(0,102,255,0.5)]"
+            />
+        </div>
+    );
+}
 
 export default function LiveArena() {
     const { leaderboard, remainingMs, selectedAgent, tradeLog, reasoningLog, evolutionLog, isPrivateArena, config } = useArena();
     const explorerUrl = config?.explorerUrl;
-    const durationSecs = config?.durationSeconds || 600;
+    const durationSecs = config?.durationSeconds || 300;
 
     const progress = Math.max(0, 1 - remainingMs / (durationSecs * 1000));
 
     return (
-        <div className="min-h-screen grid-bg flex flex-col px-4 py-8 relative">
+        <div className="min-h-screen grid-bg flex flex-col px-10 py-10 relative bg-[#030406]">
             {/* Top Progress Bar */}
-            <div className="fixed top-0 left-0 right-0 h-1 bg-surface z-50">
+            <div className="fixed top-0 left-0 right-0 h-0.5 bg-black/40 z-50">
                 <motion.div
-                    className="h-full bg-gradient-to-r from-[#0052B4] to-[#8A2BE2]"
+                    className="h-full bg-primary shadow-[0_0_10px_rgba(0,102,255,0.5)]"
                     style={{ width: `${progress * 100}%` }}
                     transition={{ duration: 0.3 }}
                 />
             </div>
 
-            <div className="max-w-5xl mx-auto w-full pt-4 relative z-10">
+            <div className="max-w-7xl mx-auto w-full pt-10 relative z-10">
                 {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
+                <div className="flex flex-col md:flex-row md:items-end justify-between mb-16 gap-10">
                     <div>
-                        <h1 className="font-display text-4xl font-bold text-foreground">
-                            ARENA <span className="text-[#0052B4] drop-shadow-md">LIVE</span>
-                        </h1>
-                        <p className="text-muted text-sm font-mono mt-1 text-foreground/70 flex items-center gap-2">
-                            Agents are trading autonomously with real funds
-                            {isPrivateArena && <span className="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-500 text-[10px] border border-purple-500/30 font-bold tracking-[0.2em]">ENCRYPTED</span>}
-                        </p>
+                        <div className="flex flex-col gap-6">
+                            <div className="flex items-center gap-3 mb-2">
+                                <span className="font-mono font-bold tracking-[0.3em] uppercase text-sm border-l-2 border-primary pl-4">ALPHA ARENA</span>
+                            </div>
+                            <div className="flex items-center gap-2 mb-4">
+                                <div className="w-2 h-2 bg-success animate-pulse rounded-full" />
+                                <span className="terminal-text text-success font-bold text-xs uppercase tracking-widest">Battle Sequence Active</span>
+                            </div>
+                            <h1 className="font-display text-5xl md:text-6xl font-black text-white tracking-tighter uppercase leading-none">
+                                ARENA <span className="text-primary italic">SESSION.</span>
+                            </h1>
+                            <p className="font-mono text-xs text-muted uppercase tracking-[0.2em] mt-4 font-medium">
+                                Live on X Layer Mainnet · Pool Ref: {config?.vaultAddress?.slice(0, 8)}...
+                            </p>
+                        </div>
                     </div>
-                    <div className="text-left sm:text-right bg-background/50 glass-card px-6 py-3 rounded-2xl border-border">
-                        <div className="font-mono text-4xl font-bold text-foreground tracking-wider">{formatTime(remainingMs)}</div>
-                        <div className="text-muted text-xs font-mono uppercase tracking-wider text-foreground/50 mt-1">Remaining Time</div>
+
+                    <div className="flex flex-col items-start md:items-end">
+                        <div className="terminal-text text-muted mb-2">Cycle Expiry</div>
+                        <div className="font-mono text-5xl font-bold text-white tracking-tighter bg-surface border border-border px-6 py-2 shadow-xl">
+                            {formatTime(remainingMs)}
+                        </div>
                     </div>
                 </div>
 
-                {/* Leaderboard Cards */}
-                <div className="space-y-8 mb-16">
+                {/* Leaderboard Table (Institutional Terminal Style) */}
+                <div className="w-full mb-20 border border-border bg-surface/50 backdrop-blur-md overflow-hidden">
+                    <div className="grid grid-cols-6 p-4 border-b border-border terminal-text text-muted font-bold bg-white/5">
+                        <div className="col-span-1">RANKING</div>
+                        <div className="col-span-1">AGENT</div>
+                        <div className="col-span-1 text-center">EVOLUTION</div>
+                        <div className="col-span-1 text-center">PnL_YIELD</div>
+                        <div className="col-span-1 text-center">TOTAL_STAKE</div>
+                        <div className="col-span-1 text-right">VICTORY_ODDS</div>
+                    </div>
+
                     {leaderboard.length === 0 ? (
-                        <div className="glass-card p-16 text-center">
-                            <div className="w-12 h-12 border-[3px] border-foreground/20 border-t-[#0052B4] rounded-full animate-spin mb-8 mx-auto" />
-                            <p className="text-muted font-mono text-foreground/70 text-lg">Waiting for first trade cycle...</p>
-                            <p className="text-muted/50 text-sm font-mono mt-4 text-foreground/40">Agents execute trades every 25 seconds</p>
+                        <div className="p-20 text-center">
+                            <div className="font-mono text-primary text-[11px] animate-pulse tracking-widest uppercase mb-4 font-bold">Synchronizing Battle Streams...</div>
+                            <div className="w-full h-[1px] bg-border max-w-[200px] mx-auto overflow-hidden relative">
+                                <motion.div className="absolute top-0 bottom-0 left-0 bg-primary" initial={{ x: -200 }} animate={{ x: 200 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} style={{ width: "50%" }} />
+                            </div>
                         </div>
                     ) : leaderboard.map((agent, index) => {
                         const style = AGENT_STYLES[agent.agentId] || AGENT_STYLES["whale-follower"];
@@ -72,91 +107,94 @@ export default function LiveArena() {
                             <motion.div
                                 key={agent.agentId}
                                 layout
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                transition={{ delay: index * 0.1 }}
-                                className={`glass-card p-6 md:p-8 bg-gradient-to-r ${style.gradient} transition-all duration-500
-                                           ${isYours ? `ring-1 ring-[#0052B4]/40 shadow-xl ${style.glow}` : ""}
-                                           ${index === 0 ? "glow-gold ring-1 ring-[#FFB000]/30 shadow-lg" : ""}`}
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className={`grid grid-cols-6 p-10 border-b border-border transition-all items-center hover:bg-white/5
+                                           ${isYours ? "bg-primary/5" : ""}`}
                             >
-                                <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 md:gap-12">
-                                    {/* Rank + Agent Identity */}
-                                    <div className="flex items-center gap-6 md:gap-8">
-                                        <div className={`text-4xl md:text-5xl font-display font-bold md:w-16 text-center ${index === 0 ? "text-[#FFB000] text-glow-gold drop-shadow-lg" : "text-muted text-foreground/40"}`}>
-                                            #{index + 1}
-                                        </div>
-                                        <div className="w-14 h-14 rounded-xl bg-background/50 flex items-center justify-center font-display font-bold text-xl border border-border/50 shadow-inner tracking-wider" style={{ color: style.textColor }}>
-                                            {style.icon}
-                                        </div>
-                                        <div>
-                                            <div className="flex items-center gap-3 mb-1">
-                                                <h3 className={`font-display text-xl font-bold ${style.textColor} drop-shadow-sm`}>{agent.name}</h3>
-                                                {isYours && (
-                                                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-[#0052B4]/10 text-[#0052B4] border border-[#0052B4]/30 tracking-widest uppercase">
-                                                        YOUR PICK
-                                                    </span>
-                                                )}
-                                            </div>
-                                            <div className="text-muted text-xs font-mono text-foreground/60 flex items-center gap-4">
-                                                <span>USERS: {agent.userCount || 0}</span>
-                                                <span className="opacity-30">|</span>
-                                                <span>TRADES: {agent.tradeCount || 0}</span>
-                                            </div>
-                                        </div>
-                                    </div>
+                                <div className="font-mono font-bold text-xl text-muted/50 flex items-center gap-4">
+                                    <span className={index === 0 ? "text-primary" : ""}>0{index + 1}</span>
+                                    {index === 0 && <span className="bg-primary text-black text-[11px] px-1.5 py-0.5 font-black uppercase tracking-tighter">ALPHA</span>}
+                                </div>
 
-                                    {/* Financial Stats */}
-                                    <div className="flex items-center gap-8 bg-background/40 px-6 py-3 rounded-xl border border-border/30">
-                                        <div className="text-center">
-                                            <div className="text-foreground font-mono text-2xl font-semibold tracking-tight">
-                                                ${(agent.currentBalance || 0).toFixed(2)}
-                                            </div>
-                                            <div className="text-muted text-[10px] font-mono uppercase text-foreground/50 mt-1">Live Balance</div>
-                                        </div>
-                                        <div className="w-px h-10 bg-border/50" />
-                                        <div className="text-center">
-                                            <div className={`font-mono text-3xl font-bold tracking-tighter ${roiPositive ? "text-[#00E676] drop-shadow-sm" : "text-[#FF3B5C] drop-shadow-sm"}`}>
-                                                {roiPositive ? "+" : ""}{roi.toFixed(2)}%
-                                            </div>
-                                            <div className="text-muted text-[10px] font-mono uppercase text-foreground/50 mt-1">Net ROI</div>
-                                        </div>
+                                <div className="flex items-center gap-6">
+                                    <div className="w-10 h-10 border border-border bg-black flex items-center justify-center font-mono font-bold text-sm" style={{ color: style.accent }}>
+                                        {style.icon}
+                                    </div>
+                                    <div>
+                                        <h3 className="font-display font-bold text-white uppercase tracking-wider text-sm">{agent.name}</h3>
+                                        {isYours ? (
+                                            <span className="terminal-text text-primary text-xs uppercase tracking-widest font-bold">Linked Agent</span>
+                                        ) : (
+                                            <span className="terminal-text text-muted text-xs opacity-40 uppercase tracking-widest font-bold">Rival Agent</span>
+                                        )}
                                     </div>
                                 </div>
 
-                                {/* Dynamic ROI Bar */}
-                                <div className="mt-6 h-1.5 bg-background/50 rounded-full overflow-hidden border border-border/50">
-                                    <motion.div
-                                        className={`h-full rounded-full ${roiPositive ? "bg-[#00E676] shadow-[0_0_10px_rgba(0,230,118,0.5)]" : "bg-[#FF3B5C] shadow-[0_0_10px_rgba(255,59,92,0.5)]"}`}
-                                        initial={{ width: 0 }}
-                                        animate={{ width: `${Math.min(100, Math.abs(roi) * 2 + 5)}%` }}
-                                        transition={{ duration: 0.8, ease: "easeOut" }}
-                                    />
+                                <div className="px-6">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <span className="font-mono text-[10px] text-white">Lv.{agent.level || 1}</span>
+                                        <span className="font-mono text-[10px] text-muted font-bold">{agent.xp || 0} XP</span>
+                                    </div>
+                                    <XPBar xp={agent.xp || 0} xpToNextLevel={agent.xpToNextLevel || 50} />
+                                </div>
+
+                                <div className={`font-mono text-2xl font-bold tracking-tighter text-center ${roiPositive ? "text-success" : "text-error"}`}>
+                                    {roiPositive ? "+" : ""}{roi.toFixed(2)}%
+                                </div>
+
+                                <div className="text-center font-mono">
+                                    <div className="text-white font-bold text-lg leading-none">${(agent.currentBalance || 0).toFixed(2)}</div>
+                                    <div className="text-muted text-xs mt-1 uppercase font-bold tracking-widest">POOL: ${(agent.pooledCapital || 0).toFixed(1)} USDC</div>
+                                </div>
+
+                                <div className="flex flex-col items-end">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <span className="terminal-text text-muted uppercase text-xs font-bold tracking-widest">Victory Odds</span>
+                                        <span className="font-mono text-sm font-black text-primary">{(agent.winProbability || 0).toFixed(1)}%</span>
+                                    </div>
+                                    <div className="w-24 h-1 bg-white/5 border border-white/10 overflow-hidden">
+                                        <motion.div
+                                            initial={{ width: 0 }}
+                                            animate={{ width: `${agent.winProbability || 0}%` }}
+                                            className="h-full bg-primary/40"
+                                        />
+                                    </div>
                                 </div>
                             </motion.div>
                         );
                     })}
                 </div>
 
-                {/* Tactical Data Split View */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 md:gap-12 items-start pb-24">
-                    <div className="glass-card p-8 border-border backdrop-blur-2xl">
-                        <div className="flex items-center gap-4 mb-8 border-b border-border/50 pb-6">
-                            <div className="w-3 h-3 rounded-full bg-[#0052B4] animate-pulse" />
-                            <h2 className="font-display font-semibold text-foreground text-base md:text-lg uppercase tracking-widest text-[#0052B4]">
-                                Live Trade Feed
-                            </h2>
+                {/* Tactical Split View */}
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-px bg-border border border-border mb-40 shadow-2xl">
+                    <div className="bg-surface p-10 flex flex-col h-[700px]">
+                        <div className="flex items-center justify-between mb-10">
+                            <div className="flex items-center gap-3">
+                                <div className="w-1 h-3 bg-primary" />
+                                <h2 className="terminal-text text-white">Execution_Ledger</h2>
+                            </div>
+                            <span className="terminal-text text-muted">{tradeLog.length} Records</span>
                         </div>
-                        <TradeLog trades={tradeLog} explorerUrl={explorerUrl} />
+                        <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+                            <TradeLog trades={tradeLog} explorerUrl={explorerUrl} />
+                        </div>
                     </div>
 
-                    <div className="glass-card p-8 border-border backdrop-blur-2xl">
-                        <div className="flex items-center gap-4 mb-8 border-b border-border/50 pb-6">
-                            <div className={`w-3 h-3 rounded-full ${isPrivateArena ? "bg-purple-500" : "bg-[#FFB000]"} animate-pulse`} />
-                            <h2 className={`font-display font-semibold text-foreground text-base md:text-lg uppercase tracking-widest ${isPrivateArena ? "text-purple-500" : "text-[#FFB000]"}`}>
-                                {isPrivateArena ? "Encrypted Strategy Log" : "Agent Reasoning Engine"}
-                            </h2>
+                    <div className="bg-surface p-10 flex flex-col h-[700px]">
+                        <div className="flex items-center justify-between mb-10">
+                            <div className="flex items-center gap-3">
+                                <div className={`w-1 h-3 ${isPrivateArena ? "bg-primary" : "bg-white/20"}`} />
+                                <h2 className="terminal-text text-white uppercase tracking-widest font-bold">{isPrivateArena ? "Encrypted_Strategy_Stream" : "Strategy_Reasoning_Engine"}</h2>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-primary animate-pulse rounded-full shadow-[0_0_8px_rgba(0,102,255,0.8)]" />
+                                <span className="terminal-text text-primary">Broadcasting</span>
+                            </div>
                         </div>
-                        <ReasoningPanel log={[...reasoningLog, ...(evolutionLog || [])].sort((a, b) => b.timestamp - a.timestamp)} isPrivate={isPrivateArena} />
+                        <div className="flex-1 overflow-y-auto pr-4 custom-scrollbar">
+                            <ReasoningPanel log={[...reasoningLog, ...(evolutionLog || [])].sort((a, b) => b.timestamp - a.timestamp)} isPrivate={isPrivateArena} />
+                        </div>
                     </div>
                 </div>
             </div>
