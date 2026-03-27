@@ -85,7 +85,14 @@ class OkxClient {
       const sym = Object.entries(config.tokens).find(([, a]) => a === tokenAddress)?.[0] || "WETH";
       return mockPrice(sym);
     }
-    return this.get("/api/v5/dex/market/token-price", { chainId: String(chainId), tokenContractAddress: tokenAddress });
+    const sym = Object.entries(config.tokens).find(([, a]) => a?.toLowerCase() === tokenAddress?.toLowerCase())?.[0] || "WETH";
+    try {
+      const res = await this.get("/api/v5/dex/market/token-price", { chainId: String(chainId), tokenContractAddress: tokenAddress });
+      return res;
+    } catch (err) {
+      logger.warn(`OKX token price failed for ${sym}, using mock`, { error: err.message });
+      return mockPrice(sym);
+    }
   }
 
   async getTrendingTokens(chainId) {
