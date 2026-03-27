@@ -2,12 +2,18 @@
 
 import { useEffect, useRef, useCallback, useState, useMemo } from "react";
 
-// In production: set NEXT_PUBLIC_BACKEND_WS_URL=wss://api.yourdomain.com/ws
-// In dev: automatically uses ws://localhost:4000/ws
+// In production: Defaults to the DuckDNS VPS WebSocket
+// In dev: fallback to ws://localhost:4000/ws
 function getWsUrl() {
     if (typeof window === "undefined") return null;
     const envUrl = process.env.NEXT_PUBLIC_BACKEND_WS_URL;
     if (envUrl) return envUrl;
+
+    // For Vercel production deployments, use the DuckDNS VPS over secure WSS
+    if (process.env.NODE_ENV === "production") {
+        return "wss://alpha-arena.duckdns.org/ws";
+    }
+
     const proto = window.location.protocol === "https:" ? "wss:" : "ws:";
     return `${proto}//localhost:4000/ws`;
 }
