@@ -161,11 +161,9 @@ class ArenaManager {
   }
 
   _isReadyToStart(arena) {
-    return (
-      (arena.agentUsers[AGENT_IDS.WHALE] || []).length > 0 &&
-      (arena.agentUsers[AGENT_IDS.MOMENTUM] || []).length > 0 &&
-      (arena.agentUsers[AGENT_IDS.RISK_GUARD] || []).length > 0
-    );
+    // For production, you might want 3 agents. 
+    // For testing/hackathon, we allow starting as soon as at least 1 user joins.
+    return arena.users.length > 0;
   }
 
   _getAgentSelections(arena) {
