@@ -42,7 +42,7 @@ export default function AgentSelection() {
     const [error, setError] = useState(null);
     const [pendingTxHash, setPendingTxHash] = useState(null);
 
-    const entryFee = config?.entryFeeUsd ?? 0.1;
+    const entryFee = config?.entryFeeUsd ?? parseFloat(process.env.NEXT_PUBLIC_ENTRY_FEE_USD || "0.1");
     const usdcAddress = config?.usdcAddress;
     const vaultAddress = config?.vaultAddress;
     const durationSecs = config?.arenaDurationSecs ?? 300;
