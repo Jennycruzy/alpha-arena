@@ -35,14 +35,14 @@ export const AGENT_META = {
   },
 };
 
-export function createAgent(agentId) {
+export function createAgent(agentId, initialCapital) {
   switch (agentId) {
     case AGENT_IDS.WHALE:
-      return new WhaleFollowerAgent();
+      return new WhaleFollowerAgent(initialCapital);
     case AGENT_IDS.MOMENTUM:
-      return new MomentumTraderAgent();
+      return new MomentumTraderAgent(initialCapital);
     case AGENT_IDS.RISK_GUARD:
-      return new RiskGuardAgent();
+      return new RiskGuardAgent(initialCapital);
     default:
       throw new Error(`Unknown agent: ${agentId}`);
   }

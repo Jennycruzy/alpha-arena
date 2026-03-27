@@ -8,8 +8,8 @@ import config from "../../config/index.js";
  * Uses okx-dex-signal to track whale buys and mirrors them.
  */
 export class WhaleFollowerAgent extends BaseAgent {
-  constructor() {
-    super("Whale Follower", "whale-follower");
+  constructor(initialCapital) {
+    super("Whale Follower", "whale-follower", initialCapital);
     this.riskMultiplier = 1.5; // Medium-High risk
   }
 

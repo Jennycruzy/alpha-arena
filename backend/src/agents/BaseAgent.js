@@ -9,12 +9,12 @@ const MAX_LEVEL = XP_THRESHOLDS.length - 1;
 const MAX_WISDOM_ENTRIES = 8; // Rolling window of lessons
 
 export class BaseAgent {
-  constructor(name, agentId) {
+  constructor(name, agentId, initialBalance = 0) {
     this.name = name;
     this.agentId = agentId;
     this.chainId = config.chain.id;
-    this.initialBalance = 0;
-    this.currentBalance = 0;
+    this.initialBalance = initialBalance;
+    this.currentBalance = initialBalance;
     this.trades = [];
     this.running = false;
     this.loopTimer = null;

@@ -161,9 +161,11 @@ class ArenaManager {
   }
 
   _isReadyToStart(arena) {
-    // For production, you might want 3 agents. 
-    // For testing/hackathon, we allow starting as soon as at least 1 user joins.
-    return arena.users.length > 0;
+    return (
+      (arena.agentUsers[AGENT_IDS.WHALE] || []).length > 0 &&
+      (arena.agentUsers[AGENT_IDS.MOMENTUM] || []).length > 0 &&
+      (arena.agentUsers[AGENT_IDS.RISK_GUARD] || []).length > 0
+    );
   }
 
   _getAgentSelections(arena) {
@@ -196,9 +198,10 @@ class ArenaManager {
     );
 
     // Create agents + attach callbacks
-    for (const agentId of Object.keys(arena.agentUsers)) {
-      if ((arena.agentUsers[agentId] || []).length === 0) continue;
-      const agent = createAgent(agentId);
+    for (const agentId of Object.values(AGENT_IDS)) {
+      const hasUserJoined = (arena.agentUsers[agentId] || []).length > 0;
+      const startingCapital = hasUserJoined ? agentCapitals[agentId] : 0.1;
+      const agent = createAgent(agentId, startingCapital);
 
       // Trade broadcast callback
       agent.onTrade = (tradeData) => {

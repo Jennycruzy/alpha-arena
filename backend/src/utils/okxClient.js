@@ -90,12 +90,22 @@ class OkxClient {
 
   async getTrendingTokens(chainId) {
     if (config.demoMode) return mockTrendingTokens();
-    return this.get("/api/v5/dex/market/trending-tokens", { chainId: String(chainId) });
+    try {
+      return await this.get("/api/v5/dex/market/trending-tokens", { chainId: String(chainId) });
+    } catch (err) {
+      logger.warn("OKX Trending Tokens failed, falling back to mock", { error: err.message });
+      return mockTrendingTokens();
+    }
   }
 
   async getWhaleSignals(chainId) {
     if (config.demoMode) return mockWhaleSignals();
-    return this.get("/api/v5/dex/signal/whale-tracking", { chainId: String(chainId) });
+    try {
+      return await this.get("/api/v5/dex/signal/whale-tracking", { chainId: String(chainId) });
+    } catch (err) {
+      logger.warn("OKX Whale Signals failed, falling back to mock", { error: err.message });
+      return mockWhaleSignals();
+    }
   }
 
   async getTokenInfo(chainId, tokenAddress) {

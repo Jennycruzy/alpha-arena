@@ -8,8 +8,8 @@ import config from "../../config/index.js";
  * Uses okx-security for token safety and avoids risky plays.
  */
 export class RiskGuardAgent extends BaseAgent {
-  constructor() {
-    super("Risk Guard", "risk-guard");
+  constructor(initialCapital) {
+    super("Risk Guard", "risk-guard", initialCapital);
     this.riskMultiplier = 0.8; // Low risk, capital preservation
   }
 

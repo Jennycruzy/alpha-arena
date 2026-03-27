@@ -8,8 +8,8 @@ import config from "../../config/index.js";
  * Uses okx-dex-market for trending token detection.
  */
 export class MomentumTraderAgent extends BaseAgent {
-  constructor() {
-    super("Momentum Trader", "momentum-trader");
+  constructor(initialCapital) {
+    super("Momentum Trader", "momentum-trader", initialCapital);
     this.riskMultiplier = 2.0; // High risk, high reward potential
   }
 
