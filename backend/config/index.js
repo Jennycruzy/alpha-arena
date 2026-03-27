@@ -62,7 +62,7 @@ const config = {
 
   // Competition rules
   competition: {
-    entryFeeUsd: parseFloat(process.env.ENTRY_FEE_USD || "0.5"),   // 0.5 USDC minimum
+    entryFeeUsd: parseFloat(process.env.ENTRY_FEE_USD || "0.1"),   // 0.1 USDC minimum
     durationSeconds: parseInt(process.env.COMPETITION_DURATION_SECONDS || "300"), // 5 mins
     agentLoopIntervalSeconds: parseInt(process.env.AGENT_LOOP_INTERVAL_SECONDS || "25"),
     leaderboardUpdateSeconds: parseInt(process.env.LEADERBOARD_UPDATE_INTERVAL_SECONDS || "5"),

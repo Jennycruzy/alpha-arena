@@ -37,7 +37,7 @@ export default function Landing() {
     const { setPhase, config } = useArena();
     const [history, setHistory] = useState([]);
 
-    const entryFee = config?.entryFeeUsd ?? 0.5;
+    const entryFee = config?.entryFeeUsd ?? 0.1;
     const duration = config ? `${Math.floor(config.durationSeconds / 60)} min` : "5 min";
 
     useEffect(() => {
