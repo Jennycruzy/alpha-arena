@@ -339,18 +339,20 @@ In ONE concise sentence (max 20 words), what single specific lesson should you a
   async _updateBalance() {
     if (config.demoMode) {
       if (this.trades.length > 0) {
-        // 🧬 Higher level agents get slightly better simulated performance
-        const levelEdge = (this.level - 1) * 0.002;  // +0.2% edge per level
-        const riskBias = (this.riskMultiplier || 1.0) * 0.035; // increased volatility
-        // heavily favor profit for demo: random() - 0.40 guarantees 60% win rate
+        const levelEdge = (this.level - 1) * 0.002;
+        const riskBias = (this.riskMultiplier || 1.0) * 0.035;
         const delta = this.currentBalance * ((Math.random() - 0.40 + levelEdge) * riskBias);
         this.currentBalance = Math.max(0, this.currentBalance + delta);
       }
       return;
     }
+    // Fix: Do not query the shared Operator Wallet for currentBalance, 
+    // since all agents share the same wallet which causes a massive pooled ROI error.
+    // Instead, currentBalance is mathematically derived from the executed trades.
     try {
-      const usdcBal = await getTokenBalance(config.tokens.USDC, config.arenaWallet.address);
-      this.currentBalance = usdcBal;
+      // In a real multi-wallet architecture, we would check the agent's dedicated wallet:
+      // const usdcBal = await getTokenBalance(config.tokens.USDC, this.dedicatedWallet.address);
+      // For now, since they share config.arenaWallet.address, we rely on the internal _executeTrade updating this.currentBalance.
     } catch (err) {
       logger.warn(`[${this.name}] Balance update failed: ${err.message}`);
     }
