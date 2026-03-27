@@ -62,7 +62,7 @@ class ArenaVaultContract {
         if (!this.contract) throw new Error("ArenaVault contract not initialized");
 
         try {
-            const receipt = await provider.getTransactionReceipt(txHash);
+            const receipt = await provider.get().getTransactionReceipt(txHash);
             if (!receipt) throw new Error("Transaction not found or not confirmed");
             if (receipt.status !== 1) throw new Error("Transaction reverted");
 
