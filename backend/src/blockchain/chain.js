@@ -135,7 +135,12 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     const tx = await getArenaWallet().sendTransaction({ to: txData.to, data: txData.data, value: txData.value || "0x0", gasLimit: txData.gasLimit || 500000n });
     logger.info("Swap tx sent", { hash: tx.hash });
     const receipt = await tx.wait();
-    return { success: true, txHash: tx.hash, gasUsed: receipt.gasUsed.toString(), blockNumber: receipt.blockNumber };
+
+    // Get outAmount from quote
+    const outAmountRaw = swapData?.data?.[0]?.outAmount || "0";
+    const outAmount = parseFloat(ethers.formatUnits(outAmountRaw, toToken === config.tokens.USDC ? 6 : 18));
+
+    return { success: true, txHash: tx.hash, outAmount, gasUsed: receipt.gasUsed.toString(), blockNumber: receipt.blockNumber };
   } catch (err) {
     logger.error("Swap execution failed", { error: err.message });
     return { success: false, reason: `Execution failed: ${err.message}` };

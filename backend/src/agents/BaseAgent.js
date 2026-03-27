@@ -170,17 +170,26 @@ export class BaseAgent {
     if (decision.action !== "HOLD" && (decision.confidence ?? 1) > 0.4) {
       const tradeResult = await this._executeTrade(decision, marketData);
       if (tradeResult?.success) {
+        // 🧬 Track balance mathematically since all agents share one wallet
+        const tradeAmountUsdc = (tradeResult.outAmount || 0); // result from executeSwap
+        const spentUsdc = decision.action === "BUY" ? (Number(decision.size) || 0) : 0;
+
+        // Simple heuristic: if we BUY, USDC goes down. If we SELL, USDC goes up.
+        if (decision.action === "BUY") {
+          this.currentBalance -= spentUsdc;
+        } else if (decision.action === "SELL") {
+          this.currentBalance += tradeAmountUsdc;
+        }
+
         const trade = {
           timestamp: Date.now(),
           ...decision,
           ...tradeResult,
           reason: this.isPrivate ? null : decision.reason,
-          // 🧬 Tag trade with agent level at time of execution
           level: this.level,
         };
         this.trades.push(trade);
         if (this.onTrade) this.onTrade(trade);
-        // Stash for post-mortem next cycle
         this._pendingPostMortem = { trade, balanceBefore };
       }
     }
@@ -313,8 +322,9 @@ In ONE concise sentence (max 20 words), what single specific lesson should you a
     const tradePercent = Math.min((decision.confidence ?? 0.5) * 0.3 * levelMultiplier, 0.35);
     const tradeAmount = Math.floor(this.currentBalance * tradePercent * 1e6);
 
-    if (tradeAmount < Math.floor(config.competition.entryFeeUsd * 1e6 * 0.1)) {
-      logger.info(`[${this.name}] Trade amount too small, skipping`);
+    // Allow micro-trades down to 0.001 USDC
+    if (tradeAmount < 1000) {
+      logger.info(`[${this.name}] Trade amount too small (${tradeAmount}), skipping`);
       return null;
     }
 

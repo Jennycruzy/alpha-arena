@@ -2,6 +2,7 @@ import { v4 as uuidv4 } from "uuid";
 import config from "../../config/index.js";
 import { createAgent, AGENT_IDS, AGENT_META } from "../agents/index.js";
 import { arenaVault } from "../contracts/ArenaVault.js";
+import { approveToken } from "../blockchain/chain.js";
 import logger from "../utils/logger.js";
 
 class ArenaManager {
@@ -367,12 +368,34 @@ class ArenaManager {
 
     this.broadcast("arena_ended", { arenaId: arena.id, results: arena.results });
 
-    // On-chain payout
+    // On-chain payout flow
     const recipients = payouts.map((p) => p.userId);
     const amounts = payouts.map((p) => p.payout);
-    arenaVault.distributePayout(arena.id, recipients, amounts)
-      .then((r) => logger.info(`ArenaVault payout tx: ${r.txHash}`))
-      .catch((err) => logger.error(`ArenaVault payout failed: ${err.message}`));
+    const totalReturn = amounts.reduce((s, a) => s + a, 0);
+
+    (async () => {
+      try {
+        if (!config.demoMode && totalReturn > 0) {
+          logger.info(`Returning ${totalReturn.toFixed(4)} USDC to vault for distribution...`);
+          // 1. Approve vault to take USDC back from operator wallet
+          const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
+          await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
+          // 2. Return funds
+          await arenaVault.returnFunds(totalReturn);
+          logger.info("Funds returned to vault successfully.");
+        }
+
+        // 3. Distribute to recipients
+        const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+        if (r.success) {
+          logger.info(`ArenaVault payout tx: ${r.txHash}`);
+        } else {
+          logger.error(`ArenaVault payout failed: ${r.error}`);
+        }
+      } catch (err) {
+        logger.error(`On-chain payout lifecycle failed: ${err.message}`);
+      }
+    })();
 
     return arena.results;
   }

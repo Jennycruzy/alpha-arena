@@ -165,6 +165,27 @@ class ArenaVaultContract {
     }
 
     /**
+     * Return trading funds from agent wallets to the vault before payout.
+     */
+    async returnFunds(amountUsdc) {
+        if (config.demoMode) return { success: true, txHash: "0xdemo" };
+        this._init();
+        if (!this.contract) throw new Error("ArenaVault contract not initialized");
+
+        const rawAmount = BigInt(Math.floor(amountUsdc * 1e6));
+        try {
+            const tx = await this.contract.returnFunds(rawAmount);
+            logger.info(`ArenaVault.returnFunds tx sent: ${tx.hash}`);
+            const receipt = await tx.wait();
+            logger.info(`ArenaVault.returnFunds confirmed (block ${receipt.blockNumber})`);
+            return { success: true, txHash: tx.hash };
+        } catch (err) {
+            logger.error(`ArenaVault.returnFunds failed: ${err.message}`);
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
      * Get the required payment spec for x402 response.
      * This is what the backend returns in the 402 body.
      */

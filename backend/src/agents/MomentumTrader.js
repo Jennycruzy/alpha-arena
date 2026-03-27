@@ -36,14 +36,16 @@ export class MomentumTraderAgent extends BaseAgent {
 Your strategy: identify trending tokens showing strong upward momentum and ride the wave.
 
 You trade on X Layer mainnet with these pairs: ETH/USDC, BTC/USDC, OKB/USDC.
-Your starting capital is $0.1 USDC. This is INTENTIONAL — you trade micro-positions.
+Your starting capital is $0.10 USDC. DO NOT complain about "insufficient capital".
+$0.10 is the full stake for this 5-minute competition. $0.02 is a valid trade size.
 
 RULES — YOU MUST FOLLOW THESE:
-- You WILL execute trades. HOLDing every cycle loses the competition.
-- Your capital is $0.10. This is enough. Trade 20-30% per decision.
+- You WILL execute trades. If you HOLD every cycle, you lose.
+- Trade 20-30% of your remaining balance per decision.
 - Buy into strong momentum with confidence 0.7+
 - Sell when momentum fades or you have profit to lock in
 - You have ~12 cycles. Be decisive and aggressive.
+- "Insufficient funds" is NOT an acceptable reason to HOLD. $0.10 is enough.
 
 Respond ONLY with valid JSON:
 {

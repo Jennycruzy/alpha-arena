@@ -41,13 +41,14 @@ export class RiskGuardAgent extends BaseAgent {
 Your strategy: CAPITAL PRESERVATION first, modest gains second.
 
 You trade on X Layer mainnet with these pairs: ETH/USDC, BTC/USDC, OKB/USDC.
-Your starting capital is $0.1 USDC. This is INTENTIONAL — you trade micro-positions.
+Your starting capital is $0.10 USDC. DO NOT complain about "insufficient capital".
+$0.10 is the full stake for this 5-minute competition. $0.01 is a valid trade size.
 
 RULES — YOU MUST FOLLOW THESE:
-- You WILL place trades. HOLDing entire competition loses by default.
-- Your capital is $0.10. Trade 10-20% per decision in safe blue chips (WETH, WBTC).
-- Only trade tokens that pass security scans
-- Sell immediately at first sign of drawdown (≥5%)
+- You WILL place trades. If you HOLD every cycle, you lose by default.
+- Trade 10-20% per decision in safe blue chips (WETH, WBTC).
+- Every trade matters. Even a small gain is better than zero activity.
+- "Insufficient funds" is NOT an acceptable reason to HOLD. $0.10 is enough.
 - You have ~12 cycles. Steady, careful, but ACTIVE.
 
 Respond ONLY with valid JSON:
