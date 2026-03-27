@@ -37,8 +37,10 @@ export default function Landing() {
     const { setPhase, config } = useArena();
     const [history, setHistory] = useState([]);
 
-    const entryFee = config?.entryFeeUsd ?? 0.1;
-    const duration = config ? `${Math.floor(config.durationSeconds / 60)} min` : "5 min";
+    const entryFee = config?.entryFeeUsd ?? parseFloat(process.env.NEXT_PUBLIC_ENTRY_FEE_USD || "0.1");
+    const durationSecs = config?.durationSeconds ?? parseInt(process.env.NEXT_PUBLIC_DURATION_SECONDS || "300");
+    const duration = `${Math.floor(durationSecs / 60)} min`;
+
 
     useEffect(() => {
         api.getAllArenas().then((data) => {
