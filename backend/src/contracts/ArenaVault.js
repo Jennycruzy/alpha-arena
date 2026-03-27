@@ -145,6 +145,8 @@ class ArenaVaultContract {
             return { success: true, txHash: "0xdemo" };
         }
 
+        // Force re-init with a fresh signer to avoid stale nonce from prior tx
+        this._initialized = false;
         this._init();
         if (!this.contract) throw new Error("ArenaVault contract not initialized");
 
@@ -153,7 +155,12 @@ class ArenaVaultContract {
         const rawAmounts = amounts.map((a) => BigInt(Math.floor(a * 1e6)));
 
         try {
-            const tx = await this.contract.distributePayout(arenaBytes32, recipients, rawAmounts);
+            // Explicitly get the latest nonce from the network
+            const signer = arenaWallet.get();
+            const nonce = await signer.getNonce();
+            logger.info(`distributePayout using nonce ${nonce} for ${recipients.length} recipients`);
+
+            const tx = await this.contract.distributePayout(arenaBytes32, recipients, rawAmounts, { nonce });
             logger.info(`ArenaVault.distributePayout tx sent: ${tx.hash}`);
             const receipt = await tx.wait();
             logger.info(`ArenaVault.distributePayout confirmed (block ${receipt.blockNumber})`);

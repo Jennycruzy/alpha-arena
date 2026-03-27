@@ -380,12 +380,20 @@ class ArenaManager {
           // 1. Approve vault to take USDC back from operator wallet
           const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
           await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
+
+          // Wait for nonce to settle
+          await new Promise(r => setTimeout(r, 3000));
+
           // 2. Return funds
           await arenaVault.returnFunds(totalReturn);
           logger.info("Funds returned to vault successfully.");
+
+          // Wait for nonce to settle before next tx
+          await new Promise(r => setTimeout(r, 5000));
         }
 
         // 3. Distribute to recipients
+        logger.info(`Distributing payout to ${recipients.length} recipients: ${recipients.map(r => r.slice(0, 8)).join(', ')}...`);
         const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
         if (r.success) {
           logger.info(`ArenaVault payout tx: ${r.txHash}`);
