@@ -3,7 +3,7 @@
  * Full reasoning visible.
  */
 import config from "../../../config/index.js";
-import logger from "../../utils/logger.js";
+import logger from "../utils/logger.js";
 
 let _anthropic = null;
 async function getClient() {

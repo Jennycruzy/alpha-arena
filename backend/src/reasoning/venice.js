@@ -8,7 +8,7 @@
  * Docs: https://docs.venice.ai
  */
 import config from "../../../config/index.js";
-import logger from "../../utils/logger.js";
+import logger from "../utils/logger.js";
 
 const VENICE_API_URL = process.env.VENICE_API_URL || "https://api.venice.ai/api/v1";
 const VENICE_MODEL = process.env.VENICE_MODEL || "llama-3.3-70b";
