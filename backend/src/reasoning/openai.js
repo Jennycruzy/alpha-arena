@@ -2,7 +2,7 @@
  * Reasoning Adapter: OpenAI (Public Mode)
  * Full reasoning + decision, all visible.
  */
-import config from "../../../config/index.js";
+import config from "../../config/index.js";
 import logger from "../../utils/logger.js";
 
 let _openai = null;

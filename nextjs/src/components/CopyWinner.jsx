@@ -69,7 +69,7 @@ export default function CopyWinner({ winner, isPrivate = false }) {
                                         ✓
                                     </div>
                                     <div>
-                                        <h3 className="font-display font-black text-xl text-white uppercase tracking-tighter">Node_Linked</h3>
+                                        <h3 className="font-display font-black text-xl text-white uppercase tracking-tighter">Agent_Linked</h3>
                                         <div className="terminal-text text-success flex items-center gap-2">
                                             <div className="w-1.5 h-1.5 bg-success animate-pulse rounded-full" />
                                             Active_Cloning_Stream
@@ -134,12 +134,12 @@ export default function CopyWinner({ winner, isPrivate = false }) {
                             </div>
 
                             <p className="font-mono text-[10px] text-muted leading-loose uppercase tracking-widest mb-10 opacity-70">
-                                Synchronize your capital with this winning strategy. This node will execute high-frequency trades autonomously on your behalf.
+                                Synchronize your capital with this winning strategy. This agent will execute high-frequency trades autonomously on your behalf.
                             </p>
 
                             <div className="space-y-8">
                                 <div>
-                                    <label className="terminal-text text-muted mb-3 block">Node Allocation (USDC)</label>
+                                    <label className="terminal-text text-muted mb-3 block">Agent Allocation (USDC)</label>
                                     <div className="flex items-center gap-2">
                                         <input
                                             type="number"

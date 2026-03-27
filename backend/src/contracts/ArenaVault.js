@@ -35,7 +35,7 @@ class ArenaVaultContract {
             }
             return;
         }
-        this.contract = new ethers.Contract(this.address, ARENA_VAULT_ABI, arenaWallet);
+        this.contract = new ethers.Contract(this.address, ARENA_VAULT_ABI, arenaWallet.get());
         this._initialized = true;
         logger.info(`ArenaVault contract initialized at ${this.address}`);
     }
