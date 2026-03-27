@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useAccount, useWriteContract } from "wagmi";
+import { useAccount, useWriteContract, usePublicClient } from "wagmi";
 import { useArena } from "@/context/ArenaContext";
 import { ArrowLeft } from "lucide-react";
 import { api } from "@/utils/api";
@@ -48,6 +48,7 @@ export default function AgentSelection() {
     const durationSecs = config?.arenaDurationSecs ?? 300;
 
     const { writeContractAsync } = useWriteContract();
+    const publicClient = usePublicClient();
 
     const handleSelect = async (agentId) => {
         if (!address) return;
@@ -62,13 +63,13 @@ export default function AgentSelection() {
             const amount = toUsdcUnits(entryFee);
 
             setStep(1);
-            await writeContractAsync({
+            const approveTx = await writeContractAsync({
                 address: usdcAddress,
                 abi: ERC20_APPROVE_ABI,
                 functionName: "approve",
                 args: [vaultAddress, amount],
             });
-            await new Promise((r) => setTimeout(r, 5000));
+            await publicClient.waitForTransactionReceipt({ hash: approveTx });
 
             setStep(2);
             const depositTx = await writeContractAsync({
