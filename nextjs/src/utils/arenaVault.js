@@ -68,7 +68,7 @@ export async function arenaIdToBytes32(arenaId) {
 
 /**
  * Format entry fee as USDC base units (6 decimals)
- * e.g. 0.5 → 500000n
+ * e.g. 0.1 → 100000n
  */
 export function toUsdcUnits(amount) {
     return BigInt(Math.floor(amount * 1_000_000));

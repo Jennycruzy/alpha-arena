@@ -33,7 +33,7 @@ contract ArenaVault is ReentrancyGuard {
     address public operator;
     address public immutable usdc;
 
-    uint256 public constant MINIMUM_ENTRY = 500_000; // 0.5 USDC (6 decimals)
+    uint256 public constant MINIMUM_ENTRY = 100_000; // 0.1 USDC (6 decimals)
     uint256 public constant EMERGENCY_TIMEOUT = 48 hours;
 
     // arenaId → user → amount deposited

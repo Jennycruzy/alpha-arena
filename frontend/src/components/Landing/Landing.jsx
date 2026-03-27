@@ -55,7 +55,7 @@ export default function Landing() {
         {/* Stats row */}
         <div className="flex justify-center gap-8 mb-12">
           {[
-            { label: "Entry Fee", value: "$10 USDC" },
+            { label: "Entry Fee", value: "$0.1 USDC" },
             { label: "Duration", value: "10 min" },
             { label: "Agents", value: "3" },
           ].map((stat, i) => (
