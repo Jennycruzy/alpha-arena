@@ -162,11 +162,9 @@ class ArenaManager {
   }
 
   _isReadyToStart(arena) {
-    return (
-      (arena.agentUsers[AGENT_IDS.WHALE] || []).length > 0 &&
-      (arena.agentUsers[AGENT_IDS.MOMENTUM] || []).length > 0 &&
-      (arena.agentUsers[AGENT_IDS.RISK_GUARD] || []).length > 0
-    );
+    // Start automatically if at least one real user has joined.
+    // House agents will fill the remaining slots.
+    return arena.users.length > 0;
   }
 
   _getAgentSelections(arena) {
@@ -314,7 +312,12 @@ class ArenaManager {
 
     const standings = Object.entries(arena.agents)
       .map(([agentId, agent]) => ({ agentId, ...agent.getStatus() }))
-      .sort((a, b) => b.roi - a.roi);
+      .sort((a, b) => {
+        // Tie-breaker: ROI first, then Trade Count, then Name
+        if (Math.abs(b.roi - a.roi) > 0.001) return b.roi - a.roi;
+        if (b.tradeCount !== a.tradeCount) return b.tradeCount - a.tradeCount;
+        return a.agentId.localeCompare(b.agentId);
+      });
 
     const winner = standings[0];
     const payouts = [];
