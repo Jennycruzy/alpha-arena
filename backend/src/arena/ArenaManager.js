@@ -441,29 +441,46 @@ class ArenaManager {
   /**
    * Manual Rescue: Force a payout for a specific arena that failed in-memory.
    */
-  async rescuePayout(arenaId, recipients, amounts, { skipReturn = false } = {}) {
-    logger.info(`🆘 Manual Rescue triggered for arena ${arenaId} (skipReturn: ${skipReturn})`);
+  async rescuePayout(arenaId, recipients, amounts, { skipReturn = false, forceRoute = true } = {}) {
+    logger.info(`🆘 Master Rescue triggered for arena ${arenaId} (skipReturn: ${skipReturn}, forceRoute: ${forceRoute})`);
     const totalReturn = amounts.reduce((s, a) => s + a, 0);
+    const arenaBytes32 = ArenaVaultContract.arenaIdToBytes32(arenaId);
 
-    // Run the robust retry loop for these fixed recipients
+    // 1. Force Route (unlocks the arena mapping in contract)
+    if (forceRoute) {
+      logger.info(`Rescue Step 1/3: Forcing route for ${arenaId}...`);
+      const agentWallets = [config.arenaWallet.address, config.arenaWallet.address, config.arenaWallet.address];
+      const routeAmounts = [0.1, 0.1, 0.1]; // Standard test amounts
+      const r1 = await arenaVault.routeFunds(arenaId, agentWallets, routeAmounts);
+      if (!r1.success) throw new Error(`Route failed: ${r1.error}`);
+      await new Promise(r => setTimeout(r, 8000)); // Nonce safety
+    }
+
+    // 2. Return Funds to Vault
+    if (!skipReturn && totalReturn > 0) {
+      logger.info(`Rescue Step 2/3: Returning ${totalReturn} USDC to vault...`);
+      const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
+      await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
+      await new Promise(r => setTimeout(r, 6000));
+      const r2 = await arenaVault.returnFunds(totalReturn);
+      if (!r2.success) throw new Error(`Return failed: ${r2.error}`);
+      await new Promise(r => setTimeout(r, 8000));
+    }
+
+    // 3. Final Payout
+    logger.info(`Rescue Step 3/3: Distributing payout for ${arenaId}...`);
     let retryCount = 0;
-    const maxRetries = 3;
-    while (retryCount < maxRetries) {
+    while (retryCount < 3) {
       try {
-        if (!skipReturn && totalReturn > 0) {
-          const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
-          await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
-          await new Promise(r => setTimeout(r, 4000));
-          await arenaVault.returnFunds(totalReturn);
-          await new Promise(r => setTimeout(r, 6000));
-        }
         const r = await arenaVault.distributePayout(arenaId, recipients, amounts);
-        if (r.success) return { success: true, txHash: r.txHash };
+        if (r.success) {
+          logger.info(`✅ RESCUE SUCCESS: ${r.txHash}`);
+          return { success: true, txHash: r.txHash };
+        }
         throw new Error(r.error);
       } catch (err) {
         retryCount++;
-        if (retryCount >= maxRetries) throw err;
-        logger.warn(`Rescue attempt ${retryCount} failed: ${err.message}, retrying...`);
+        logger.warn(`Payout retry ${retryCount} failed: ${err.message}`);
         await new Promise(r => setTimeout(r, 10000));
       }
     }

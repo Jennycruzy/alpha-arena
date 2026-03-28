@@ -155,13 +155,13 @@ router.get("/copy-trade/status/:userId", (req, res) => {
 });
 
 router.post("/arena/rescue", async (req, res) => {
-  const { arenaId, recipients, amounts, secret, skipReturn = false } = req.body;
+  const { arenaId, recipients, amounts, secret, skipReturn = false, forceRoute = false } = req.body;
   // Simple secret protection for manual rescue
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
   if (!arenaId || !recipients || !amounts) return res.status(400).json({ error: "Missing params" });
 
   try {
-    const r = await arenaManager.rescuePayout(arenaId, recipients, amounts, { skipReturn });
+    const r = await arenaManager.rescuePayout(arenaId, recipients, amounts, { skipReturn, forceRoute });
     res.json(r);
   } catch (err) {
     res.status(500).json({ error: err.message });
