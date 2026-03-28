@@ -110,8 +110,14 @@ export class ArenaVaultContract {
             let allLogs = [];
             for (let i = fromBlock; i < currentBlock; i += 100) {
                 const chunkTo = Math.min(i + 99, currentBlock);
-                const logs = await this.contract.queryFilter(filter, i, chunkTo);
-                allLogs = allLogs.concat(logs);
+                try {
+                    const logs = await this.contract.queryFilter(filter, i, chunkTo);
+                    allLogs = allLogs.concat(logs);
+                } catch (chunkErr) {
+                    logger.warn(`Chunk ${i}-${chunkTo} failed: ${chunkErr.message}`);
+                }
+                // Delay to bypass public RPC rate limits
+                await new Promise(r => setTimeout(r, 200));
             }
 
             return allLogs.map(l => {
