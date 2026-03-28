@@ -11,7 +11,7 @@ const VAULT_ABI = [
 
 export class ArenaVaultContract {
     constructor() {
-        this.address = config.contracts.arenaVault;
+        this.address = config.arenaVaultAddress;
         this.provider = null;
         this.wallet = null;
         this.contract = null;
