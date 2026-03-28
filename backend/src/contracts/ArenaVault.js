@@ -150,14 +150,18 @@ export class ArenaVaultContract {
         if (config.demoMode) return [];
         this._init();
         try {
+            logger.info("getRecentDeposits: Fetching current block number...");
             const currentBlock = await this.provider.getBlockNumber();
+            logger.info(`getRecentDeposits: Current block is ${currentBlock}`);
             const fromBlock = currentBlock - lookbackBlocks;
 
             let allLogs = [];
             for (let chunkTo = currentBlock; chunkTo > fromBlock; chunkTo -= 99) {
                 const chunkFrom = Math.max(chunkTo - 98, fromBlock);
                 try {
+                    logger.info(`getRecentDeposits: Fetching chunk ${chunkFrom} to ${chunkTo}...`);
                     const logs = await this._fetchLogsNative(chunkFrom, chunkTo);
+                    logger.info(`getRecentDeposits: Chunk ${chunkFrom}-${chunkTo} returned ${logs.length} logs`);
                     allLogs = allLogs.concat(logs);
                 } catch (chunkErr) {
                     logger.warn(`Chunk ${chunkFrom}-${chunkTo} failed: ${chunkErr.message}`);
