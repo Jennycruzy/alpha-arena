@@ -3,6 +3,7 @@ import { arenaManager } from "../arena/ArenaManager.js";
 import { require402, verifyPayment } from "../payments/x402Middleware.js";
 import { AGENT_META } from "../agents/index.js";
 import config from "../../config/index.js";
+import logger from "../utils/logger.js";
 
 const router = Router();
 
