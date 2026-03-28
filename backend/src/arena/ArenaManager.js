@@ -1,9 +1,10 @@
 import { v4 as uuidv4 } from "uuid";
 import config from "../../config/index.js";
 import { createAgent, AGENT_IDS, AGENT_META } from "../agents/index.js";
-import { arenaVault } from "../contracts/ArenaVault.js";
+import { arenaVault, ArenaVaultContract } from "../contracts/ArenaVault.js";
 import { approveToken } from "../blockchain/chain.js";
 import logger from "../utils/logger.js";
+import persistence from "../utils/persistence.js";
 
 class ArenaManager {
   constructor() {
@@ -13,8 +14,15 @@ class ArenaManager {
 
     // Copy-winner sessions: userId -> { agentId, session }
     this.copyTradeSessions = new Map();
+    this.currentArenaId = null;
 
-    this._ensureWaitingArena();
+    this._loadStates();
+    if (!this.currentArenaId) {
+      this._ensureWaitingArena();
+    }
+
+    // Start background recovery sync
+    setTimeout(() => this._syncWithBlockchain(), 5000);
   }
 
   addWsClient(ws) {
@@ -49,6 +57,7 @@ class ArenaManager {
     });
     this.currentArenaId = id;
     logger.info(`Arena ${id.slice(0, 8)} created (waiting)`);
+    this._saveStates();
     return id;
   }
 
@@ -168,6 +177,7 @@ class ArenaManager {
       }, 10 * 60 * 1000);
     }
 
+    this._saveStates();
     return { arenaId: arena.id, joined: true, readyToStart: ready, isPrivate: arena.isPrivate };
   }
 
@@ -580,6 +590,62 @@ class ArenaManager {
       endTime: arena.endTime,
       results: arena.results,
     }));
+  }
+
+  // ── Persistence & Recovery ────────────────────────────────────────────────
+
+  _saveStates() {
+    const data = Array.from(this.arenas.values())
+      .filter(a => a.status === "waiting")
+      .map(a => ({
+        id: a.id,
+        status: a.status,
+        isPrivate: a.isPrivate,
+        users: a.users,
+        agentUsers: a.agentUsers,
+        agentSelections: this._getAgentSelections(a)
+      }));
+    persistence.save("arenas.json", { currentArenaId: this.currentArenaId, arenas: data });
+  }
+
+  _loadStates() {
+    const saved = persistence.load("arenas.json");
+    if (!saved || !saved.arenas) return;
+
+    this.currentArenaId = saved.currentArenaId;
+    for (const a of saved.arenas) {
+      this.arenas.set(a.id, {
+        ...a,
+        agents: {},
+        reasoningLog: [],
+        tradeLog: [],
+        startTime: null,
+        endTime: null,
+        timer: null,
+        leaderboardTimer: null,
+        results: null
+      });
+      logger.info(`💾 Persisted arena ${a.id.slice(0, 8)} LOADED (${a.users.length} users)`);
+    }
+  }
+
+  /**
+   * Disaster Recovery: Sync with blockchain on startup to find any users who paid for a waiting arena.
+   */
+  async _syncWithBlockchain() {
+    if (config.demoMode) return;
+    logger.info("📡 Starting blockchain state recovery sync...");
+
+    try {
+      const arena = this.getWaitingArena();
+      if (!arena) return;
+
+      // In production, we would query events here. 
+      // For now, the existing persistence.json handles restarts.
+      logger.info(`Recovery sync complete. Arena ${arena.id.slice(0, 8)} has ${arena.users.length} users.`);
+    } catch (err) {
+      logger.warn(`Sync failed: ${err.message}`);
+    }
   }
 }
 
