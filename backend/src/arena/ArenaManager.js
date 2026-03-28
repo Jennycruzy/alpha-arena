@@ -439,8 +439,8 @@ class ArenaManager {
   /**
    * Manual Rescue: Force a payout for a specific arena that failed in-memory.
    */
-  async rescuePayout(arenaId, recipients, amounts) {
-    logger.info(`🆘 Manual Rescue triggered for arena ${arenaId}`);
+  async rescuePayout(arenaId, recipients, amounts, { skipReturn = false } = {}) {
+    logger.info(`🆘 Manual Rescue triggered for arena ${arenaId} (skipReturn: ${skipReturn})`);
     const totalReturn = amounts.reduce((s, a) => s + a, 0);
 
     // Run the robust retry loop for these fixed recipients
@@ -448,7 +448,7 @@ class ArenaManager {
     const maxRetries = 3;
     while (retryCount < maxRetries) {
       try {
-        if (totalReturn > 0) {
+        if (!skipReturn && totalReturn > 0) {
           const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
           await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
           await new Promise(r => setTimeout(r, 4000));
@@ -461,6 +461,7 @@ class ArenaManager {
       } catch (err) {
         retryCount++;
         if (retryCount >= maxRetries) throw err;
+        logger.warn(`Rescue attempt ${retryCount} failed: ${err.message}, retrying...`);
         await new Promise(r => setTimeout(r, 10000));
       }
     }
