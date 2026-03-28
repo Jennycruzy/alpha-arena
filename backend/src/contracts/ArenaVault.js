@@ -59,12 +59,8 @@ export class ArenaVaultContract {
     static arenaIdToBytes32(arenaId) {
         if (!arenaId) return ethers.constants.HashZero;
         if (arenaId.startsWith("0x") && arenaId.length === 66) return arenaId;
-        // Arena IDs are typically UUIDs, convert to bytes32
-        try {
-            return ethers.utils.formatBytes32String(arenaId.slice(0, 31));
-        } catch (e) {
-            return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(arenaId));
-        }
+        // MUST MATCH FRONTEND: keccak256 the UTF-8 string
+        return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(arenaId));
     }
 
     /**
