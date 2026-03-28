@@ -174,4 +174,24 @@ router.post("/arena/rescue", async (req, res) => {
   }
 });
 
+// ─── Admin: Force-link a verified depositor into the waiting arena ───────────
+// Use this when a deposit was verified on-chain but server lost state.
+router.post("/arena/force-link", (req, res) => {
+  const { userId, agentId, entryFee, secret } = req.body;
+  if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
+  if (!userId || !agentId || !entryFee) return res.status(400).json({ error: "Missing params" });
+
+  try {
+    // Check if user is already linked
+    const existing = arenaManager.getArenaForUser(userId);
+    if (existing) return res.json({ success: true, message: "User already linked", arenaId: existing.id });
+
+    const result = arenaManager.joinArena(userId, agentId, entryFee, { isPrivate: false });
+    logger.info(`[FORCE-LINK] User ${userId.slice(0, 8)} force-linked to arena ${result.arenaId.slice(0, 8)} (agent: ${agentId}, fee: ${entryFee})`);
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
