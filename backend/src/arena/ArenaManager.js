@@ -19,6 +19,9 @@ class ArenaManager {
 
     // Start background recovery sync
     setTimeout(() => this._syncWithBlockchain(), 5000);
+
+    // Start auto-cleanup for expired sessions
+    setInterval(() => this._autoCleanup(), 30000);
   }
 
   addWsClient(ws) {
@@ -342,6 +345,22 @@ class ArenaManager {
       elapsed,
       isPrivate: arena.isPrivate,
     });
+  }
+
+  async _autoCleanup() {
+    const now = Date.now();
+    for (const [id, arena] of this.arenas) {
+      if (arena.status === "active" && arena.endTime && now > arena.endTime + 15000) {
+        logger.info(`🧹 Auto-cleanup: Ending expired arena ${id.slice(0, 8)}`);
+        await this._endArena(arena);
+      }
+      // Also purge very old ended/refunded sessions to keep Map small (e.g. 1 hour old)
+      if ((arena.status === "completed" || arena.status === "refunded") && arena.endTime && now > arena.endTime + 3600000) {
+        logger.info(`🧹 Auto-cleanup: Purging old arena ${id.slice(0, 8)} from memory`);
+        this.arenas.delete(id);
+      }
+    }
+    this._saveStates();
   }
 
   // ── End ─────────────────────────────────────────────────────────────────────
