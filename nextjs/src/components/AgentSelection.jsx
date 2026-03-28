@@ -51,8 +51,8 @@ export default function AgentSelection() {
 
     const [allocations, setAllocations] = useState({
         "whale-follower": 1,
-        "momentum-trader": 0,
-        "risk-guard": 0
+        "momentum-trader": 1,
+        "risk-guard": 1
     });
 
     const [expandedAgent, setExpandedAgent] = useState(null);
@@ -186,9 +186,9 @@ export default function AgentSelection() {
 
                             <div className="w-full md:w-64 flex flex-col gap-2">
                                 <div className="flex justify-between terminal-text text-[9px] font-black uppercase">
-                                    <span className="text-white/40">Capital Split</span>
+                                    <span className="text-white/40">Relative Split</span>
                                     <span className={allocations[agent.id] > 0 ? "text-primary" : "text-white/20"}>
-                                        {Math.round((allocations[agent.id] / (totalWeight || 1)) * 100)}%
+                                        {totalWeight > 0 ? Math.round((allocations[agent.id] / totalWeight) * 100) : 0}%
                                     </span>
                                 </div>
                                 <input
