@@ -19,7 +19,8 @@ let _arenaWallet = null;
 
 function getProvider() {
   if (!_provider && !config.demoMode) {
-    _provider = new ethers.JsonRpcProvider(config.chain.rpcUrl, config.chain.id);
+    // Ethers v5: providers.JsonRpcProvider
+    _provider = new ethers.providers.JsonRpcProvider(config.chain.rpcUrl);
   }
   return _provider;
 }
@@ -56,14 +57,14 @@ export async function getTokenBalance(tokenAddress, walletAddress) {
   try {
     if (tokenAddress === "0x0000000000000000000000000000000000000000") {
       const bal = await getProvider().getBalance(walletAddress);
-      return parseFloat(ethers.formatEther(bal));
+      return parseFloat(ethers.utils.formatEther(bal));
     }
     const contract = new ethers.Contract(tokenAddress, ERC20_ABI, getProvider());
     const [balance, decimals] = await Promise.all([
       contract.balanceOf(walletAddress),
       contract.decimals(),
     ]);
-    return parseFloat(ethers.formatUnits(balance, decimals));
+    return parseFloat(ethers.utils.formatUnits(balance, decimals));
   } catch (err) {
     logger.error("getTokenBalance failed", { tokenAddress, error: err.message });
     return 0;
@@ -76,8 +77,7 @@ export async function getUsdcBalance(walletAddress) {
 
 export async function executeSwap({ fromToken, toToken, amount, slippagePercent, agentId }) {
   if (config.demoMode) {
-    // Simulate a realistic swap outcome
-    const success = Math.random() > 0.05; // 95% success rate
+    const success = Math.random() > 0.05;
     const slippageFactor = 1 - (Math.random() * (slippagePercent || 2)) / 100;
     const amountNum = Number(amount) / 1e6;
     const outAmount = amountNum * slippageFactor * (0.98 + Math.random() * 0.04);
@@ -87,12 +87,10 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     return { success: true, txHash, outAmount, gasUsed: "21000", blockNumber: Math.floor(Math.random() * 1e6) };
   }
 
-  // ─── Real swap ─────────────────────────────────────────────────────────────
   const chainId = String(config.chain.id);
   const walletAddr = config.arenaWallet.address;
   const slippage = String(slippagePercent || config.competition.maxSlippagePercent);
 
-  // 1. Security scan
   const targetToken = toToken === config.tokens.USDC ? fromToken : toToken;
   try {
     const securityData = await okxClient.securityScan(chainId, targetToken);
@@ -105,7 +103,6 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     logger.warn("Security scan failed, proceeding", { error: err.message });
   }
 
-  // 2. Get swap quote
   const quoteParams = { chainId, fromTokenAddress: fromToken, toTokenAddress: toToken, amount: String(amount), slippage, userWalletAddress: walletAddr };
   let swapData;
   try {
@@ -117,22 +114,24 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
   const txData = (swapData && swapData.data && swapData.data[0]) ? swapData.data[0].tx : null;
   if (!txData) return { success: false, reason: "No tx data from OKX" };
 
-  // 3. Simulate on-chain
   try {
     await getProvider().call({ to: txData.to, data: txData.data, value: txData.value || "0x0", from: walletAddr });
   } catch (err) {
     return { success: false, reason: `Simulation failed: ${err.message}` };
   }
 
-  // 4. Execute real tx
   try {
-    const tx = await getArenaWallet().sendTransaction({ to: txData.to, data: txData.data, value: txData.value || "0x0", gasLimit: txData.gasLimit || 500000n });
+    const tx = await getArenaWallet().sendTransaction({
+      to: txData.to,
+      data: txData.data,
+      value: txData.value || "0x0",
+      gasLimit: ethers.BigNumber.from(txData.gasLimit || "500000")
+    });
     logger.info("Swap tx sent", { hash: tx.hash });
     const receipt = await tx.wait();
 
-    // Get outAmount from quote
     const outAmountRaw = (swapData && swapData.data && swapData.data[0]) ? swapData.data[0].outAmount : "0";
-    const outAmount = parseFloat(ethers.formatUnits(outAmountRaw, toToken === config.tokens.USDC ? 6 : 18));
+    const outAmount = parseFloat(ethers.utils.formatUnits(outAmountRaw, toToken === config.tokens.USDC ? 6 : 18));
 
     return { success: true, txHash: tx.hash, outAmount, gasUsed: receipt.gasUsed.toString(), blockNumber: receipt.blockNumber };
   } catch (err) {
