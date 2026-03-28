@@ -120,6 +120,9 @@ router.post("/arena/join", require402, asyncHandler(async (req, res) => {
   if (!config.demoMode && req.paymentTxHash) {
     try {
       const v = await verifyPayment(req.paymentTxHash, arenaId, userId);
+      if (!v.verified) {
+        return res.status(402).json({ error: v.error || "Payment verification failed" });
+      }
       finalEntryFee = v.amount;
     } catch (err) {
       return res.status(402).json({ error: `Payment verification failed: ${err.message}` });

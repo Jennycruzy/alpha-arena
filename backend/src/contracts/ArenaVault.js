@@ -85,6 +85,8 @@ export class ArenaVaultContract {
             let found = false;
             let amount = 0;
 
+            const targetArenaId = ArenaVaultContract.arenaIdToBytes32(arenaId);
+
             for (const log of receipt.logs) {
                 try {
                     const parsed = iface.parseLog(log);
@@ -93,7 +95,7 @@ export class ArenaVaultContract {
                         const logUser = parsed.args.user.toLowerCase();
                         const logAmount = parseFloat(ethers.utils.formatUnits(parsed.args.amount, 6));
 
-                        if (logArenaId === arenaId && logUser === userAddress.toLowerCase()) {
+                        if (logArenaId === targetArenaId && logUser === userAddress.toLowerCase()) {
                             if (logAmount >= minAmountUsdc * 0.99) {
                                 found = true;
                                 amount = logAmount;
