@@ -142,6 +142,17 @@ class ArenaManager {
   joinArena(userId, allocations, entryFee, options = {}) {
     const { isPrivate = true } = options;
     // ⚔️ SOLO DIRECTOR MODE: Ensure we are using a unique arena
+    // Evict user from any current sessions (prevents "already in session" blocks)
+    for (const [id, a] of this.arenas) {
+      if (a.users.some(u => u.userId.toLowerCase() === userId.toLowerCase())) {
+        logger.info(`Evicting ${userId.slice(0, 8)} from old arena ${id.slice(0, 8)}`);
+        a.users = a.users.filter(u => u.userId.toLowerCase() !== userId.toLowerCase());
+        if (a.users.length === 0 && a.status === "active") {
+          this._endArena(a);
+        }
+      }
+    }
+
     const arena = this.getWaitingArena();
     arena.creatorId = userId;
     arena.isPrivate = isPrivate; // Apply pref
