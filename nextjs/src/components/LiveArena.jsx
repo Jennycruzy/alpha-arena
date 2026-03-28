@@ -115,7 +115,6 @@ export default function LiveArena() {
                             >
                                 <div className="font-mono font-bold text-xl text-muted/50 flex items-center gap-4">
                                     <span className={index === 0 ? "text-primary" : ""}>0{index + 1}</span>
-                                    {index === 0 && <span className="bg-primary text-black text-[11px] px-1.5 py-0.5 font-black uppercase tracking-tighter">ALPHA</span>}
                                 </div>
 
                                 <div className="flex items-center gap-6">

@@ -418,7 +418,7 @@ class ArenaManager {
             await new Promise(r => setTimeout(r, 4000));
 
             // 2. Return funds
-            await arenaVault.returnFunds(totalReturn);
+            await arenaVault.routeFunds(totalReturn);
             logger.info("Funds returned to vault successfully.");
 
             // Wait for nonce to settle before next tx
@@ -475,7 +475,7 @@ class ArenaManager {
       const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
       await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
       await new Promise(r => setTimeout(r, 6000));
-      const r2 = await arenaVault.returnFunds(totalReturn);
+      const r2 = await arenaVault.routeFunds(totalReturn);
       if (!r2.success) throw new Error(`Return failed: ${r2.error}`);
       await new Promise(r => setTimeout(r, 8000));
     }
