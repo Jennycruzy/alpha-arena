@@ -25,9 +25,9 @@ export class RiskGuardAgent extends BaseAgent {
 
     return {
       prices: {
-        WETH: (ethPrice && ethPrice.data)?.[0]?.price || "unknown",
-        WBTC: (btcPrice && btcPrice.data)?.[0]?.price || "unknown",
-        OKB: (okbPrice && okbPrice.data)?.[0]?.price || "unknown",
+        WETH: (ethPrice && ethPrice.data)?(.[0] && .[0].)price || "unknown",
+        WBTC: (btcPrice && btcPrice.data)?(.[0] && .[0].)price || "unknown",
+        OKB: (okbPrice && okbPrice.data)?(.[0] && .[0].)price || "unknown",
       },
       security: {
         WETH: (ethSecurity && ethSecurity.data)?.[0] || {},

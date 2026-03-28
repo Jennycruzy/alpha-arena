@@ -129,7 +129,8 @@ export class BaseAgent {
       this.isPrivate
     );
 
-    logger.info(`[${this.name}] Decision: ${decision.action} ${decision.token} (conf: ${decision.(confidence && confidence.toFixed)(2)}) via ${decision.provider} | Lv.${this.level}`);
+    const conf = (decision.confidence !== undefined) ? decision.confidence.toFixed(2) : "0.00";
+    logger.info(`[${this.name}] Decision: ${decision.action} ${decision.token} (conf: ${conf}) via ${decision.provider} | Lv.${this.level}`);
 
     // ── Build and store reasoning entry ────────────────────────────────────
     const reasoningEntry = {

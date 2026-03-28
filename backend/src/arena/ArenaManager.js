@@ -536,11 +536,12 @@ class ArenaManager {
     const sessionId = uuidv4();
 
     agent.onTrade = (trade) => {
+      const meta = AGENT_META[agentId];
       this.broadcast("copy_trade_executed", {
         sessionId,
         userId,
         agentId,
-        agentName: AGENT_META[agentId]?.name,
+        agentName: meta ? meta.name : "Unknown",
         ...trade,
         reason: isPrivate ? null : trade.reason,
       });
@@ -555,7 +556,8 @@ class ArenaManager {
     agent.start(capitalUsdc, isPrivate);
 
     this.copyTradeSessions.set(userId, { sessionId, agentId, agent, capitalUsdc, startedAt: Date.now() });
-    logger.info(`📋 Copy session started: ${userId.slice(0, 8)} → ${AGENT_META[agentId]?.name}`);
+    const sessionMeta = AGENT_META[agentId];
+    logger.info(`📋 Copy session started: ${userId.slice(0, 8)} → ${sessionMeta ? sessionMeta.name : "Unknown"}`);
 
     return sessionId;
   }
@@ -575,7 +577,7 @@ class ArenaManager {
     return {
       sessionId: session.sessionId,
       agentId: session.agentId,
-      agentName: AGENT_META[session.agentId]?.name,
+      agentName: (AGENT_META[session.agentId] && AGENT_META[session.agentId].)name,
       capitalUsdc: session.capitalUsdc,
       startedAt: session.startedAt,
       ...session.agent.getStatus(),

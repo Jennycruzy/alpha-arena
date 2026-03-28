@@ -139,7 +139,9 @@ router.post("/copy-trade/start", async (req, res) => {
 
   try {
     const sessionId = arenaManager.startCopyTradeSession(userId, agentId, capitalUsdc, isPrivate);
-    res.json({ sessionId, agentId, agentName: AGENT_META[agentId]?.name, capitalUsdc, started: true });
+    const meta = AGENT_META[agentId];
+    const agentName = meta ? meta.name : "Unknown";
+    res.json({ sessionId, agentId, agentName, capitalUsdc, started: true });
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
