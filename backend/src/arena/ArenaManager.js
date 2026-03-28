@@ -736,12 +736,12 @@ class ArenaManager {
     return { success: true, count: arenas.length };
   }
 
-  forceStartArena(arenaId) {
+  forceRefundArena(arenaId) {
     const arena = this.arenas.get(arenaId);
     if (!arena || arena.status !== "waiting") return false;
 
-    logger.info(`⚡ Force starting arena ${arenaId.slice(0, 8)}...`);
-    this._startArena(arena);
+    logger.info(`⚡ Force refunding arena ${arenaId.slice(0, 8)}...`);
+    this._refundArena(arena);
     return true;
   }
 }

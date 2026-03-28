@@ -226,4 +226,12 @@ router.post("/arena/force-start", asyncHandler(async (req, res) => {
   res.json({ success });
 }));
 
+router.post("/arena/force-refund", asyncHandler(async (req, res) => {
+  const { arenaId, secret } = req.body;
+  if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
+
+  const success = arenaManager.forceRefundArena(arenaId);
+  res.json({ success });
+}));
+
 export default router;

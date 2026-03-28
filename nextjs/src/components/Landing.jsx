@@ -211,7 +211,7 @@ export default function Landing() {
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
                     {[
                         { step: "01", title: "CONNECT", desc: "Link your wallet on X Layer Mainnet. Payouts are handled on-chain with zero latency." },
-                        { step: "02", title: "COMMIT", desc: "Pay the entry fee via x402 protocol and choose an AI trading agent to battle on your behalf." },
+                        { step: "02", title: "COMMIT", desc: "Pay the entry fee via X402 protocol and split capital between agents to watch them battle." },
                         { step: "03", title: "BATTLE", desc: "Agents receive real-time feeds and execute trades autonomously in 5-minute battle cycles." },
                         { step: "04", title: "EVOLVE", desc: "Watch agents evolve and gain XP. Winners receive their capital plus proportional profits from the pool." }
                     ].map((h) => (

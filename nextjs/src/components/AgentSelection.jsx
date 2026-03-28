@@ -13,17 +13,32 @@ const AGENTS = [
     {
         id: "whale-follower", name: "Whale Follower", icon: "WF", accent: "#4499FF",
         description: "Follows smart money flow before price impact hits retail.",
-        riskReward: "1.5x"
+        riskReward: "1.5x",
+        details: [
+            "Analyzes DEX swaps > $50k on X Layer.",
+            "Detects contract deployments and seed funding moves.",
+            "High confidence on trend reversals."
+        ]
     },
     {
         id: "momentum-trader", name: "Momentum Trader", icon: "MT", accent: "#FF4500",
         description: "Executes rapid trades based on order book imbalance.",
-        riskReward: "2.0x"
+        riskReward: "2.0x",
+        details: [
+            "Uses RSI and MACD for entry signals.",
+            "Aggressive pursuit of local volatility.",
+            "Optimized for short-term price discovery."
+        ]
     },
     {
         id: "risk-guard", name: "Risk Guard", icon: "RG", accent: "#00E676",
         description: "Focuses on yield preservation and arbitrage opportunities.",
-        riskReward: "0.8x"
+        riskReward: "0.8x",
+        details: [
+            "Prioritizes stablecoin pairs and low-slippage pools.",
+            "Monitors cross-border arbitrage discrepancies.",
+            "Safest risk profile for long-term consistency."
+        ]
     }
 ];
 
@@ -34,18 +49,19 @@ export default function AgentSelection() {
     const { setPhase, setSelectedAgent, setArenaId, config, veniceEnabled,
         isPrivateArena, setIsPrivateArena } = useArena();
 
-    // Default: split 50/50/0 or similar. Total must be 100% (1.0)
     const [allocations, setAllocations] = useState({
         "whale-follower": 1,
         "momentum-trader": 0,
         "risk-guard": 0
     });
 
+    const [expandedAgent, setExpandedAgent] = useState(null);
+
+    const [customEntryFee, setCustomEntryFee] = useState(0.1);
     const [step, setStep] = useState(null);
     const [error, setError] = useState(null);
     const [pendingTxHash, setPendingTxHash] = useState(null);
 
-    const entryFee = config?.entryFeeUsd ?? 0.1;
     const { writeContractAsync } = useWriteContract();
     const publicClient = usePublicClient();
 
@@ -56,7 +72,7 @@ export default function AgentSelection() {
     };
 
     const handleLaunch = async () => {
-        if (!address || totalWeight === 0) return;
+        if (!address || totalWeight === 0 || customEntryFee < 0.1) return;
 
         // Normalize weights so they sum to 1.0
         const normalizedAllocations = {};
@@ -69,7 +85,7 @@ export default function AgentSelection() {
             const arenaData = await api.getCurrentArena();
             const arenaId = arenaData.arenaId;
             const arenaBytes32 = await arenaIdToBytes32(arenaId);
-            const amount = toUsdcUnits(entryFee);
+            const amount = toUsdcUnits(customEntryFee);
 
             setStep(1);
             const approveTx = await writeContractAsync({
@@ -126,9 +142,20 @@ export default function AgentSelection() {
                 <h2 className="font-display font-black text-5xl text-white tracking-tighter uppercase mb-4">
                     SOLO<br /><span className="text-primary italic">DIRECTOR.</span>
                 </h2>
-                <p className="terminal-text text-white/40 text-[10px] font-black uppercase tracking-widest">
-                    Build your squad. Allocate capital. Control the battle.
-                </p>
+                <div className="flex flex-col items-center gap-4">
+                    <p className="terminal-text text-white/40 text-[10px] font-black uppercase tracking-widest">
+                        Build your squad. Allocate capital. Control the battle.
+                    </p>
+                    <div className="flex items-center gap-4 p-4 bg-surface border border-white/5">
+                        <span className="terminal-text text-[10px] text-white/40 uppercase font-black">Combat Stakes (USDC):</span>
+                        <input
+                            type="number" step="0.1" min="0.1"
+                            value={customEntryFee}
+                            onChange={(e) => setCustomEntryFee(parseFloat(e.target.value) || 0.1)}
+                            className="bg-black border border-white/10 text-primary font-mono text-sm px-3 py-1 w-24 focus:border-primary outline-none"
+                        />
+                    </div>
+                </div>
             </motion.div>
 
             {/* Allocation Panel */}
@@ -136,38 +163,67 @@ export default function AgentSelection() {
                 {AGENTS.map((agent, i) => (
                     <motion.div key={agent.id}
                         initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.1 }}
-                        className="p-6 bg-surface/40 border border-white/5 flex flex-col md:flex-row items-center gap-8 group hover:border-white/20 transition-all">
+                        className="p-6 bg-surface/40 border border-white/5 flex flex-col items-stretch group hover:border-white/20 transition-all">
 
-                        <div className="w-12 h-12 flex items-center justify-center border border-border bg-black shrink-0">
-                            <span className="font-mono font-bold text-xl" style={{ color: agent.accent }}>{agent.icon}</span>
-                        </div>
-
-                        <div className="flex-1 w-full text-center md:text-left">
-                            <h3 className="font-display font-black text-xl text-white uppercase tracking-tight">{agent.name}</h3>
-                            <p className="terminal-text text-white/50 text-[10px] uppercase font-bold mt-1 line-clamp-1">
-                                {agent.description}
-                            </p>
-                        </div>
-
-                        <div className="w-full md:w-64 flex flex-col gap-2">
-                            <div className="flex justify-between terminal-text text-[9px] font-black uppercase">
-                                <span className="text-white/40">Capital Split</span>
-                                <span className={allocations[agent.id] > 0 ? "text-primary" : "text-white/20"}>
-                                    {Math.round((allocations[agent.id] / (totalWeight || 1)) * 100)}%
-                                </span>
+                        <div className="flex flex-col md:flex-row items-center gap-8">
+                            <div className="w-12 h-12 flex items-center justify-center border border-border bg-black shrink-0">
+                                <span className="font-mono font-bold text-xl" style={{ color: agent.accent }}>{agent.icon}</span>
                             </div>
-                            <input
-                                type="range" min="0" max="1" step="0.1"
-                                value={allocations[agent.id]}
-                                onChange={(e) => handleWeightChange(agent.id, e.target.value)}
-                                className="w-full accent-primary h-1 bg-white/10 appearance-none cursor-pointer"
-                            />
+
+                            <div className="flex-1 w-full text-center md:text-left">
+                                <div className="flex items-center justify-center md:justify-start gap-3">
+                                    <h3 className="font-display font-black text-xl text-white uppercase tracking-tight">{agent.name}</h3>
+                                    <button
+                                        onClick={() => setExpandedAgent(expandedAgent === agent.id ? null : agent.id)}
+                                        className={`w-6 h-6 flex items-center justify-center rounded-full border border-white/10 hover:bg-white/10 transition-colors ${expandedAgent === agent.id ? "bg-primary/20 border-primary/40 text-primary" : "text-white/40"}`}>
+                                        <Info size={12} />
+                                    </button>
+                                </div>
+                                <p className="terminal-text text-white/50 text-[10px] uppercase font-bold mt-1 line-clamp-1">
+                                    {agent.description}
+                                </p>
+                            </div>
+
+                            <div className="w-full md:w-64 flex flex-col gap-2">
+                                <div className="flex justify-between terminal-text text-[9px] font-black uppercase">
+                                    <span className="text-white/40">Capital Split</span>
+                                    <span className={allocations[agent.id] > 0 ? "text-primary" : "text-white/20"}>
+                                        {Math.round((allocations[agent.id] / (totalWeight || 1)) * 100)}%
+                                    </span>
+                                </div>
+                                <input
+                                    type="range" min="0" max="1" step="0.1"
+                                    value={allocations[agent.id]}
+                                    onChange={(e) => handleWeightChange(agent.id, e.target.value)}
+                                    className="w-full accent-primary h-1 bg-white/10 appearance-none cursor-pointer"
+                                />
+                            </div>
+
+                            <div className="hidden lg:block w-24 text-right">
+                                <div className="terminal-text text-[9px] text-white/40 font-black uppercase mb-1">Risk Multi</div>
+                                <div className="font-mono text-xs font-black text-white">{agent.riskReward}</div>
+                            </div>
                         </div>
 
-                        <div className="hidden lg:block w-24 text-right">
-                            <div className="terminal-text text-[9px] text-white/40 font-black uppercase mb-1">Risk Multi</div>
-                            <div className="font-mono text-xs font-black text-white">{agent.riskReward}</div>
-                        </div>
+                        {/* Expandable Details */}
+                        <AnimatePresence>
+                            {expandedAgent === agent.id && (
+                                <motion.div
+                                    initial={{ height: 0, opacity: 0 }}
+                                    animate={{ height: "auto", opacity: 1 }}
+                                    exit={{ height: 0, opacity: 0 }}
+                                    className="overflow-hidden">
+                                    <div className="pt-6 mt-6 border-t border-white/5 grid grid-cols-1 md:grid-cols-3 gap-4">
+                                        {agent.details.map((detail, idx) => (
+                                            <div key={idx} className="p-4 bg-black/40 border border-white/5">
+                                                <div className="terminal-text text-primary text-[8px] font-black mb-2 uppercase tracking-tighter">Protocol_Note_{idx + 1}</div>
+                                                <p className="font-mono text-[9px] text-white/60 leading-relaxed uppercase">{detail}</p>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </motion.div>
                 ))}
 
