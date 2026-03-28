@@ -74,9 +74,17 @@ export class BaseAgent {
     await this._loop();
   }
 
-  stop() {
+  async stop() {
     this.running = false;
     if (this.loopTimer) clearTimeout(this.loopTimer);
+
+    // 🧬 Ensure final trade gets its post-mortem (XP/Wisdom)
+    if (this._pendingPostMortem) {
+      const marketData = await this.fetchMarketData().catch(() => ({ prices: {} }));
+      await this._runPostMortem(this._pendingPostMortem, marketData);
+      this._pendingPostMortem = null;
+    }
+
     logger.info(`[${this.name}] Stopped. Final: $${this.currentBalance.toFixed(4)} | Lv.${this.level} | XP:${this.xp}`);
   }
 

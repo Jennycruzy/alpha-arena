@@ -348,7 +348,7 @@ class ArenaManager {
 
   async _endArena(arena) {
     logger.info(`🏁 Arena ${arena.id.slice(0, 8)} ENDING`);
-    for (const agent of Object.values(arena.agents)) agent.stop();
+    for (const agent of Object.values(arena.agents)) await agent.stop();
     clearInterval(arena.leaderboardTimer);
     arena.status = "completed";
 
@@ -622,10 +622,10 @@ class ArenaManager {
     return sessionId;
   }
 
-  stopCopyTradeSession(userId) {
+  async stopCopyTradeSession(userId) {
     const session = this.copyTradeSessions.get(userId);
     if (session) {
-      session.agent.stop();
+      await session.agent.stop();
       this.copyTradeSessions.delete(userId);
       logger.info(`📋 Copy session stopped: ${userId.slice(0, 8)}`);
     }
