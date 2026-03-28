@@ -162,9 +162,12 @@ class ArenaManager {
   }
 
   _isReadyToStart(arena) {
-    // Start automatically if at least one real user has joined.
-    // House agents will fill the remaining slots.
-    return arena.users.length > 0;
+    // REAL MODE: Requires all 3 agent types to have at least one real user.
+    return (
+      (arena.agentUsers[AGENT_IDS.WHALE] || []).length > 0 &&
+      (arena.agentUsers[AGENT_IDS.MOMENTUM] || []).length > 0 &&
+      (arena.agentUsers[AGENT_IDS.RISK_GUARD] || []).length > 0
+    );
   }
 
   _getAgentSelections(arena) {

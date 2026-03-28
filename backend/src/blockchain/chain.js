@@ -73,28 +73,6 @@ export async function getUsdcBalance(walletAddress) {
   return getTokenBalance(config.tokens.USDC, walletAddress || config.arenaWallet.address);
 }
 
-/**
- * Simulate a swap with realistic P&L when OKX DEX API is unavailable.
- * Used as fallback so agents always record trades.
- */
-function _simulateSwap({ amount, slippagePercent, agentId }) {
-  const success = Math.random() > 0.08; // 92% success rate
-  const slippageFactor = 1 - (Math.random() * (slippagePercent || 2)) / 100;
-  const amountNum = Number(amount) / 1e6;
-  const outAmount = amountNum * slippageFactor * (0.97 + Math.random() * 0.06);
-
-  const txHash = `0xsim${Date.now().toString(16)}${Math.floor(Math.random() * 0xffff).toString(16)}`;
-  logger.info(`[SIM SWAP] ${agentId}: ${amountNum.toFixed(4)} USDC → ${outAmount.toFixed(4)} | tx: ${txHash}`);
-
-  if (!success) return { success: false, reason: "Simulated slippage failure" };
-  return { success: true, txHash, outAmount, gasUsed: "21000", blockNumber: Math.floor(Math.random() * 1e6) };
-}
-
-/**
- * Execute a real or simulated swap.
- * In DEMO_MODE: simulates P&L based on drifting prices.
- * In REAL mode: security scan → OKX quote → eth_call simulate → broadcast tx.
- */
 export async function executeSwap({ fromToken, toToken, amount, slippagePercent, agentId }) {
   if (config.demoMode) {
     // Simulate a realistic swap outcome
@@ -102,10 +80,8 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     const slippageFactor = 1 - (Math.random() * (slippagePercent || 2)) / 100;
     const amountNum = Number(amount) / 1e6;
     const outAmount = amountNum * slippageFactor * (0.98 + Math.random() * 0.04);
-
     const txHash = `0xdemo${Date.now().toString(16)}${Math.floor(Math.random() * 0xffff).toString(16)}`;
     logger.info(`[DEMO SWAP] ${agentId}: ${amountNum.toFixed(2)} USDC → ${outAmount.toFixed(4)} | tx: ${txHash}`);
-
     if (!success) return { success: false, reason: "Demo simulated slippage failure" };
     return { success: true, txHash, outAmount, gasUsed: "21000", blockNumber: Math.floor(Math.random() * 1e6) };
   }
@@ -128,32 +104,26 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     logger.warn("Security scan failed, proceeding", { error: err.message });
   }
 
-  // 2. Get swap quote — fall back to simulated trade if OKX API is down
+  // 2. Get swap quote
   const quoteParams = { chainId, fromTokenAddress: fromToken, toTokenAddress: toToken, amount: String(amount), slippage, userWalletAddress: walletAddr };
   let swapData;
   try {
     swapData = await okxClient.executeSwap(quoteParams);
   } catch (err) {
-    logger.warn(`OKX Swap API unavailable, using simulated trade for ${agentId}`, { error: err.message });
-    // Fallback: simulate the trade with realistic P&L
-    return _simulateSwap({ amount, slippagePercent, agentId });
+    return { success: false, reason: `Swap API error: ${err.message}` };
   }
 
   const txData = swapData?.data?.[0]?.tx;
-  if (!txData) {
-    logger.warn(`No tx data from OKX swap, using simulated trade for ${agentId}`);
-    return _simulateSwap({ amount, slippagePercent, agentId });
-  }
+  if (!txData) return { success: false, reason: "No tx data from OKX" };
 
-  // 3. Simulate
+  // 3. Simulate on-chain
   try {
     await getProvider().call({ to: txData.to, data: txData.data, value: txData.value || "0x0", from: walletAddr });
   } catch (err) {
-    logger.warn(`On-chain simulation failed, using simulated trade for ${agentId}`, { error: err.message });
-    return _simulateSwap({ amount, slippagePercent, agentId });
+    return { success: false, reason: `Simulation failed: ${err.message}` };
   }
 
-  // 4. Execute
+  // 4. Execute real tx
   try {
     const tx = await getArenaWallet().sendTransaction({ to: txData.to, data: txData.data, value: txData.value || "0x0", gasLimit: txData.gasLimit || 500000n });
     logger.info("Swap tx sent", { hash: tx.hash });
@@ -165,8 +135,8 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
 
     return { success: true, txHash: tx.hash, outAmount, gasUsed: receipt.gasUsed.toString(), blockNumber: receipt.blockNumber };
   } catch (err) {
-    logger.error("Swap execution failed, using simulated trade", { error: err.message });
-    return _simulateSwap({ amount, slippagePercent, agentId });
+    logger.error("Swap execution failed", { error: err.message });
+    return { success: false, reason: `Execution failed: ${err.message}` };
   }
 }
 
