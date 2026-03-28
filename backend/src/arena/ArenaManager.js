@@ -380,34 +380,48 @@ class ArenaManager {
     const totalReturn = amounts.reduce((s, a) => s + a, 0);
 
     (async () => {
-      try {
-        if (!config.demoMode && totalReturn > 0) {
-          logger.info(`Returning ${totalReturn.toFixed(4)} USDC to vault for distribution...`);
-          // 1. Approve vault to take USDC back from operator wallet
-          const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
-          await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
+      let retryCount = 0;
+      const maxRetries = 5;
 
-          // Wait for nonce to settle
-          await new Promise(r => setTimeout(r, 3000));
+      while (retryCount < maxRetries) {
+        try {
+          if (!config.demoMode && totalReturn > 0) {
+            logger.info(`[Payout Attempt ${retryCount + 1}] Returning ${totalReturn.toFixed(4)} USDC to vault...`);
+            // 1. Approve vault to take USDC back from operator wallet
+            const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
+            await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
 
-          // 2. Return funds
-          await arenaVault.returnFunds(totalReturn);
-          logger.info("Funds returned to vault successfully.");
+            // Wait for nonce to settle
+            await new Promise(r => setTimeout(r, 4000));
 
-          // Wait for nonce to settle before next tx
-          await new Promise(r => setTimeout(r, 5000));
+            // 2. Return funds
+            await arenaVault.returnFunds(totalReturn);
+            logger.info("Funds returned to vault successfully.");
+
+            // Wait for nonce to settle before next tx
+            await new Promise(r => setTimeout(r, 6000));
+          }
+
+          // 3. Distribute to recipients
+          logger.info(`[Payout Attempt ${retryCount + 1}] Distributing payout to ${recipients.length} recipients...`);
+          const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+          if (r.success) {
+            logger.info(`ArenaVault payout tx confirmed: ${r.txHash}`);
+            break; // Success! Exit loop.
+          } else {
+            throw new Error(r.error || "Unknown payout error");
+          }
+        } catch (err) {
+          retryCount++;
+          logger.error(`Payout attempt ${retryCount} failed: ${err.message}`);
+          if (retryCount >= maxRetries) {
+            logger.error("MAX PAYOUT RETRIES REACHED. Manual rescue required.");
+          } else {
+            const delay = 10000 * retryCount;
+            logger.info(`Retrying payout in ${delay / 1000} seconds...`);
+            await new Promise(r => setTimeout(r, delay));
+          }
         }
-
-        // 3. Distribute to recipients
-        logger.info(`Distributing payout to ${recipients.length} recipients: ${recipients.map(r => r.slice(0, 8)).join(', ')}...`);
-        const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
-        if (r.success) {
-          logger.info(`ArenaVault payout tx: ${r.txHash}`);
-        } else {
-          logger.error(`ArenaVault payout failed: ${r.error}`);
-        }
-      } catch (err) {
-        logger.error(`On-chain payout lifecycle failed: ${err.message}`);
       }
     })();
 
