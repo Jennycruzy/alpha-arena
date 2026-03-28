@@ -24,7 +24,7 @@ export function ArenaProvider({ children }) {
 
     // ── New state for features 1-6 ──────────────────────────────────────────────
     const [reasoningLog, setReasoningLog] = useState([]); // [{agentId, reason, action, ...}]
-    const [isPrivateArena, setIsPrivateArena] = useState(false); // current arena privacy mode
+    const [isPrivateArena, setIsPrivateArena] = useState(true); // current arena privacy mode
     const [veniceEnabled, setVeniceEnabled] = useState(false);   // server has VENICE_API_KEY
     const [copyTradeSession, setCopyTradeSession] = useState(null); // { sessionId, agentId, ... }
     const [copyTradeLog, setCopyTradeLog] = useState([]);
@@ -175,7 +175,7 @@ export function ArenaProvider({ children }) {
         setAgentSelections({});
         setTradeLog([]);
         setReasoningLog([]);
-        setIsPrivateArena(false);
+        setIsPrivateArena(true);
         setCopyTradeSession(null);
         setCopyTradeLog([]);
         setEvolutionLog([]);
