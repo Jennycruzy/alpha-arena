@@ -23,15 +23,19 @@ export class RiskGuardAgent extends BaseAgent {
       okxClient.securityScan(this.chainId, config.tokens.WBTC).catch(() => null),
     ]);
 
+    const getPrice = (res) => {
+      return (res && res.data && res.data[0]) ? res.data[0].price : "unknown";
+    };
+
     return {
       prices: {
-        WETH: (ethPrice && ethPrice.data)?(.[0] && .[0].)price || "unknown",
-        WBTC: (btcPrice && btcPrice.data)?(.[0] && .[0].)price || "unknown",
-        OKB: (okbPrice && okbPrice.data)?(.[0] && .[0].)price || "unknown",
+        WETH: getPrice(ethPrice),
+        WBTC: getPrice(btcPrice),
+        OKB: getPrice(okbPrice),
       },
       security: {
-        WETH: (ethSecurity && ethSecurity.data)?.[0] || {},
-        WBTC: (btcSecurity && btcSecurity.data)?.[0] || {},
+        WETH: (ethSecurity && ethSecurity.data && ethSecurity.data[0]) || {},
+        WBTC: (btcSecurity && btcSecurity.data && btcSecurity.data[0]) || {},
       },
     };
   }

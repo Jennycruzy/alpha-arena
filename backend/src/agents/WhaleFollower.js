@@ -20,11 +20,15 @@ export class WhaleFollowerAgent extends BaseAgent {
       okxClient.getTokenPrice(this.chainId, config.tokens.WBTC).catch(() => null),
     ]);
 
+    const getPrice = (res) => {
+      return (res && res.data && res.data[0]) ? res.data[0].price : "unknown";
+    };
+
     return {
       whaleSignals: (whaleSignals && whaleSignals.data) || [],
       prices: {
-        WETH: (ethPrice && ethPrice.data)?(.[0] && .[0].)price || "unknown",
-        WBTC: (btcPrice && btcPrice.data)?(.[0] && .[0].)price || "unknown",
+        WETH: getPrice(ethPrice),
+        WBTC: getPrice(btcPrice),
       },
     };
   }

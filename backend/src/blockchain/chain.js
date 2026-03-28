@@ -50,7 +50,8 @@ const ERC20_ABI = [
 export async function getTokenBalance(tokenAddress, walletAddress) {
   if (config.demoMode) {
     const key = `${walletAddress}-${tokenAddress}`;
-    return _demoBalances.get(key) ?? config.competition.entryFeeUsd;
+    const bal = _demoBalances.get(key);
+    return (bal !== undefined && bal !== null) ? bal : config.competition.entryFeeUsd;
   }
   try {
     if (tokenAddress === "0x0000000000000000000000000000000000000000") {
@@ -95,7 +96,7 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
   const targetToken = toToken === config.tokens.USDC ? fromToken : toToken;
   try {
     const securityData = await okxClient.securityScan(chainId, targetToken);
-    const risk = (securityData && securityData.data)?.[0];
+    const risk = (securityData && securityData.data && securityData.data[0]);
     if (risk && risk.riskLevel === "high") {
       logger.warn("Security scan: HIGH RISK token, aborting", { targetToken });
       return { success: false, reason: "High risk token" };
@@ -113,7 +114,7 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     return { success: false, reason: `Swap API error: ${err.message}` };
   }
 
-  const txData = (swapData && swapData.data)?(.[0] && .[0].)tx;
+  const txData = (swapData && swapData.data && swapData.data[0]) ? swapData.data[0].tx : null;
   if (!txData) return { success: false, reason: "No tx data from OKX" };
 
   // 3. Simulate on-chain
@@ -130,7 +131,7 @@ export async function executeSwap({ fromToken, toToken, amount, slippagePercent,
     const receipt = await tx.wait();
 
     // Get outAmount from quote
-    const outAmountRaw = (swapData && swapData.data)?(.[0] && .[0].)outAmount || "0";
+    const outAmountRaw = (swapData && swapData.data && swapData.data[0]) ? swapData.data[0].outAmount : "0";
     const outAmount = parseFloat(ethers.formatUnits(outAmountRaw, toToken === config.tokens.USDC ? 6 : 18));
 
     return { success: true, txHash: tx.hash, outAmount, gasUsed: receipt.gasUsed.toString(), blockNumber: receipt.blockNumber };

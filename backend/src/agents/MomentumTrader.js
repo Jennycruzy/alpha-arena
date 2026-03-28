@@ -21,12 +21,16 @@ export class MomentumTraderAgent extends BaseAgent {
       okxClient.getTokenPrice(this.chainId, config.tokens.OKB).catch(() => null),
     ]);
 
+    const getPrice = (res) => {
+      return (res && res.data && res.data[0]) ? res.data[0].price : "unknown";
+    };
+
     return {
       trending: (trending && trending.data) || [],
       prices: {
-        WETH: (ethPrice && ethPrice.data)?(.[0] && .[0].)price || "unknown",
-        WBTC: (btcPrice && btcPrice.data)?(.[0] && .[0].)price || "unknown",
-        OKB: (okbPrice && okbPrice.data)?(.[0] && .[0].)price || "unknown",
+        WETH: getPrice(ethPrice),
+        WBTC: getPrice(btcPrice),
+        OKB: getPrice(okbPrice),
       },
     };
   }

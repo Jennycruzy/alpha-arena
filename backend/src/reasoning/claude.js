@@ -23,7 +23,9 @@ export async function reason(systemPrompt, userPrompt, agentId) {
             system: systemPrompt,
             messages: [{ role: "user", content: userPrompt }],
         });
-        const text = res.content.find((b) => b.type === "text")?.text || "";
+
+        const textBody = res.content.find((b) => b.type === "text");
+        const text = textBody ? textBody.text : "";
         const clean = text.replace(/```json\n?|```/g, "").trim();
         return JSON.parse(clean);
     } catch (err) {

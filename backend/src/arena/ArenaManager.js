@@ -577,7 +577,7 @@ class ArenaManager {
     return {
       sessionId: session.sessionId,
       agentId: session.agentId,
-      agentName: (AGENT_META[session.agentId] && AGENT_META[session.agentId].)name,
+      agentName: (AGENT_META[session.agentId] && AGENT_META[session.agentId].name) || "Unknown",
       capitalUsdc: session.capitalUsdc,
       startedAt: session.startedAt,
       ...session.agent.getStatus(),
