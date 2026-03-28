@@ -506,10 +506,11 @@ class ArenaManager {
     const recipients = arena.users.map(u => u.userId);
     const amounts = arena.users.map(u => u.entryFee);
 
-    logger.info(`Initiating bulk refund for arena ${arena.id.slice(0, 8)} (${recipients.length} users)`);
+    logger.info(`Initiating bulk refund (routing) for arena ${arena.id.slice(0, 8)} (${recipients.length} users)`);
     try {
-      // For refunds, funds are already in the vault from the deposit
-      const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+      // For refunds, funds are in the vault. Since distributePayout requires fundsRouted=true,
+      // we use routeFunds to move USDC directly from vault to users.
+      const r = await arenaVault.routeFunds(arena.id, recipients, amounts);
       if (r.success) {
         logger.info(`Refund successful: ${r.txHash}`);
       } else {
