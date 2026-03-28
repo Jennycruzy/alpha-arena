@@ -17,9 +17,7 @@ class ArenaManager {
     this.currentArenaId = null;
 
     this._loadStates();
-    if (!this.currentArenaId) {
-      this._ensureWaitingArena();
-    }
+    // No more global waiting arena. Every director gets their own.
 
     // Start background recovery sync
     setTimeout(() => this._syncWithBlockchain(), 5000);
@@ -62,13 +60,10 @@ class ArenaManager {
   }
 
   getWaitingArena() {
-    let arena = this.arenas.get(this.currentArenaId);
-    // If current arena is missing, finished, or not in "waiting" status, ensure we have a fresh one
-    if (!arena || arena.status !== "waiting") {
-      logger.info(`[ArenaManager] Current arena ${this.currentArenaId || "N/A"} is ${arena ? arena.status : "missing"}. Ensuring waiting arena...`);
-      const newId = this._ensureWaitingArena();
-      arena = this.arenas.get(newId);
-    }
+    // Solo Director Mode: Every request for a current arena gets a fresh one.
+    const id = this._ensureWaitingArena();
+    const arena = this.arenas.get(id);
+    arena.isPrivate = true; // Always private by default now
     return arena;
   }
 
@@ -141,10 +136,14 @@ class ArenaManager {
   // ── Join ────────────────────────────────────────────────────────────────────
 
   joinArena(userId, allocations, entryFee, { isPrivate = true } = {}) {
-    // Solo Director Mode: Every join creates a new private arena
-    const arenaId = this._ensureWaitingArena();
-    const arena = this.arenas.get(arenaId);
-    arena.isPrivate = isPrivate;
+    // ⚔️ SOLO DIRECTOR MODE: Ensure we are using the user's specific waiting arena
+    // If user is already in an arena, use that, otherwise create a new one.
+    let arena = [...this.arenas.values()].find(a => a.status === 'waiting' && a.users.length === 0);
+    if (!arena) {
+      const id = this._ensureWaitingArena();
+      arena = this.arenas.get(id);
+    }
+    arena.isPrivate = true; // Force solo
 
     // allocations: { [agentId]: weight } e.g. { "whale-follower": 0.5, "momentum-trader": 0.5 }
     // We store the weights in the user object
