@@ -129,7 +129,12 @@ class OkxClient {
 
   async securityScan(chainId, tokenAddress) {
     if (config.demoMode) return { data: [{ riskLevel: "low" }] };
-    return this.get("/api/v5/dex/security/token-security", { chainId: String(chainId), tokenContractAddress: tokenAddress });
+    try {
+      return await this.get("/api/v5/dex/security/token-security", { chainId: String(chainId), tokenContractAddress: tokenAddress });
+    } catch (err) {
+      logger.warn(`OKX Security scan failed for ${tokenAddress}, ignoring...`, { error: err.message });
+      return null;
+    }
   }
 
   async getSwapQuote(params) {

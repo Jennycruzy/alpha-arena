@@ -1,0 +1,17 @@
+{
+  "currentArenaId": "330fc6fe-2b7c-4773-90d9-1da77fe86eb5",
+  "arenas": [
+    {
+      "id": "330fc6fe-2b7c-4773-90d9-1da77fe86eb5",
+      "status": "waiting",
+      "isPrivate": false,
+      "users": [],
+      "agentUsers": {},
+      "agentSelections": {
+        "whale-follower": 0,
+        "momentum-trader": 0,
+        "risk-guard": 0
+      }
+    }
+  ]
+}

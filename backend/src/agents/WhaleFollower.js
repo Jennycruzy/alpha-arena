@@ -51,7 +51,7 @@ RULES — YOU MUST FOLLOW THESE:
 
 Respond ONLY with valid JSON:
 {
-  "action": "BUY" | "SELL" | "HOLD",
+  "action": "BUY" | "SELL" | "HOLD" | "LONG" | "SHORT",
   "token": "WETH" | "WBTC" | "OKB",
   "confidence": 0.0-1.0,
   "reason": "brief explanation"

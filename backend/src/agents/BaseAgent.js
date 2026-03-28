@@ -36,6 +36,9 @@ export class BaseAgent {
     this.level = 1;           // current level (starts at 1)
     this.wisdom = [];         // array of learned lesson strings
     this._pendingPostMortem = null; // last trade entry awaiting post-mortem
+
+    // ── 📈 PERP STATE (Long/Short) ───────────────────────────────────────────
+    this.positions = {};      // tokenSymbol -> { side: "LONG"|"SHORT", entryPrice, sizeUsdc, liquidationPrice }
   }
 
   async fetchMarketData() { throw new Error("fetchMarketData must be implemented"); }
@@ -64,6 +67,7 @@ export class BaseAgent {
     this.level = 1;
     this.wisdom = [];
     this._pendingPostMortem = null;
+    this.positions = {};
     logger.info(`[${this.name}] Started with $${capitalUsdc} USDC (${isPrivate ? "🔒 PRIVATE" : "👁 PUBLIC"}) | Lv.${this.level}`);
     await this._loop();
   }
@@ -156,27 +160,43 @@ export class BaseAgent {
     const effectiveConfidence = (decision.confidence !== undefined && decision.confidence !== null) ? decision.confidence : 1.0;
 
     if (decision.action !== "HOLD" && effectiveConfidence > 0.4) {
-      const tradeResult = await this._executeTrade(decision, marketData);
-      if (tradeResult && tradeResult.success) {
-        const tradeAmountUsdc = (tradeResult.outAmount || 0);
-        const spentUsdc = decision.action === "BUY" ? (Number(decision.size) || 0) : 0;
+      if (decision.action === "BUY" || decision.action === "SELL") {
+        const tradeResult = await this._executeTrade(decision, marketData);
+        if (tradeResult && tradeResult.success) {
+          const tradeAmountUsdc = (tradeResult.outAmount || 0);
+          const spentUsdc = decision.action === "BUY" ? (Number(decision.size) || 0) : 0;
 
-        if (decision.action === "BUY") {
-          this.currentBalance -= spentUsdc;
-        } else if (decision.action === "SELL") {
-          this.currentBalance += tradeAmountUsdc;
+          if (decision.action === "BUY") {
+            this.currentBalance -= spentUsdc;
+          } else if (decision.action === "SELL") {
+            this.currentBalance += tradeAmountUsdc;
+          }
+
+          const trade = {
+            timestamp: Date.now(),
+            ...decision,
+            ...tradeResult,
+            reason: this.isPrivate ? null : decision.reason,
+            level: this.level,
+          };
+          this.trades.push(trade);
+          if (this.onTrade) this.onTrade(trade);
+          this._pendingPostMortem = { trade, balanceBefore };
         }
-
-        const trade = {
-          timestamp: Date.now(),
-          ...decision,
-          ...tradeResult,
-          reason: this.isPrivate ? null : decision.reason,
-          level: this.level,
-        };
-        this.trades.push(trade);
-        if (this.onTrade) this.onTrade(trade);
-        this._pendingPostMortem = { trade, balanceBefore };
+      } else if (decision.action === "LONG" || decision.action === "SHORT") {
+        const tradeResult = await this._executePerpTrade(decision, marketData);
+        if (tradeResult && tradeResult.success) {
+          const trade = {
+            timestamp: Date.now(),
+            ...decision,
+            ...tradeResult,
+            reason: this.isPrivate ? null : decision.reason,
+            level: this.level,
+          };
+          this.trades.push(trade);
+          if (this.onTrade) this.onTrade(trade);
+          this._pendingPostMortem = { trade, balanceBefore };
+        }
       }
     }
 
@@ -296,6 +316,47 @@ export class BaseAgent {
     });
   }
 
+  async _executePerpTrade(decision, marketData) {
+    const symbol = (decision.token && decision.token.toUpperCase) ? decision.token.toUpperCase() : "WETH";
+    const currentPrice = marketData.prices[symbol] || 3200;
+
+    // Close existing position if any
+    if (this.positions[symbol]) {
+      const pos = this.positions[symbol];
+      const pnl = pos.side === "LONG" ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
+      const pnlUsdc = (pnl / pos.entryPrice) * pos.sizeUsdc;
+      this.currentBalance += pnlUsdc;
+      delete this.positions[symbol];
+      logger.info(`[${this.name}] Closed ${pos.side} ${symbol} at ${currentPrice} (PnL: $${pnlUsdc.toFixed(2)})`);
+    }
+
+    // Open new position
+    const levelMultiplier = 1 + (this.level - 1) * 0.1;
+    const confidence = (decision.confidence !== undefined && decision.confidence !== null) ? decision.confidence : 0.5;
+    const sizeUsdc = this.currentBalance * Math.min(confidence * 0.5 * levelMultiplier, 0.8);
+
+    if (sizeUsdc < 0.01) {
+      logger.info(`[${this.name}] Perp position too small ($${sizeUsdc.toFixed(2)}), skipping`);
+      return { success: false };
+    }
+
+    this.positions[symbol] = {
+      side: decision.action,
+      entryPrice: currentPrice,
+      sizeUsdc: sizeUsdc,
+      liquidationPrice: decision.action === "LONG" ? currentPrice * 0.85 : currentPrice * 1.15
+    };
+
+    logger.info(`[${this.name}] Opened ${decision.action} ${symbol} at ${currentPrice} | Size: $${sizeUsdc.toFixed(2)}`);
+
+    return {
+      success: true,
+      entryPrice: currentPrice,
+      sizeUsdc,
+      txHash: `0xperp-${Date.now().toString(16)}`
+    };
+  }
+
   _selectToken(decision) {
     const target = (decision.token && decision.token.toUpperCase) ? decision.token.toUpperCase() : "WETH";
     const address = config.tokens[target];
@@ -306,6 +367,25 @@ export class BaseAgent {
   }
 
   async _updateBalance() {
+    // 1. Calculate Unrealized PnL from Perp positions
+    let unrealizedPnl = 0;
+    const marketData = await this.fetchMarketData();
+
+    for (const [symbol, pos] of Object.entries(this.positions)) {
+      const currentPrice = marketData.prices[symbol] || pos.entryPrice;
+      const pnl = pos.side === "LONG" ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
+      const pnlUsdc = (pnl / pos.entryPrice) * pos.sizeUsdc;
+      unrealizedPnl += pnlUsdc;
+
+      // Liquidation check
+      if ((pos.side === "LONG" && currentPrice <= pos.liquidationPrice) ||
+        (pos.side === "SHORT" && currentPrice >= pos.liquidationPrice)) {
+        logger.warn(`[${this.name}] 💀 LIQUIDATED ${pos.side} ${symbol} at ${currentPrice}`);
+        this.currentBalance -= pos.sizeUsdc;
+        delete this.positions[symbol];
+      }
+    }
+
     if (config.demoMode) {
       if (this.trades.length > 0) {
         const levelEdge = (this.level - 1) * 0.002;
@@ -314,6 +394,9 @@ export class BaseAgent {
         this.currentBalance = Math.max(0, this.currentBalance + delta);
       }
     }
+
+    // Total balance = Wallet Balance + Unrealized PnL
+    this.currentBalance += unrealizedPnl;
   }
 
   getStatus() {

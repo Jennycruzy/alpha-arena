@@ -4,9 +4,16 @@ import { provider, arenaWallet } from "../blockchain/chain.js";
 import logger from "../utils/logger.js";
 
 const VAULT_ABI = [
-    "event Deposited(string arenaId, address indexed user, uint256 amount)",
-    "function deposit(string arenaId, uint256 amount) external",
-    "function withdraw(string arenaId, uint256 amount) external",
+    "event Deposited(bytes32 indexed arenaId, address indexed user, uint256 amount)",
+    "event FundsRouted(bytes32 indexed arenaId, address[] agentWallets, uint256[] amounts)",
+    "event PayoutDistributed(bytes32 indexed arenaId, address indexed recipient, uint256 amount)",
+    "function deposit(bytes32 arenaId) external",
+    "function routeFunds(bytes32 arenaId, address[] agentWallets, uint256[] amounts) external",
+    "function distributePayout(bytes32 arenaId, address[] recipients, uint256[] amounts) external",
+    "function returnFunds(uint256 amount) external",
+    "function pooledFunds(bytes32 arenaId) view returns (uint256)",
+    "function fundsRouted(bytes32 arenaId) view returns (bool)",
+    "function payoutDistributed(bytes32 arenaId) view returns (bool)",
 ];
 
 export class ArenaVaultContract {
@@ -45,8 +52,19 @@ export class ArenaVaultContract {
 
     _getDepositCalldata(arenaId) {
         const iface = new ethers.utils.Interface(VAULT_ABI);
-        const amount = ethers.utils.parseUnits(String(config.competition.entryFeeUsd), 6);
-        return iface.encodeFunctionData("deposit", [arenaId, amount]);
+        const arenaBytes32 = ArenaVaultContract.arenaIdToBytes32(arenaId);
+        return iface.encodeFunctionData("deposit", [arenaBytes32]);
+    }
+
+    static arenaIdToBytes32(arenaId) {
+        if (!arenaId) return ethers.constants.HashZero;
+        if (arenaId.startsWith("0x") && arenaId.length === 66) return arenaId;
+        // Arena IDs are typically UUIDs, convert to bytes32
+        try {
+            return ethers.utils.formatBytes32String(arenaId.slice(0, 31));
+        } catch (e) {
+            return ethers.utils.keccak256(ethers.utils.toUtf8Bytes(arenaId));
+        }
     }
 
     /**
@@ -197,16 +215,76 @@ export class ArenaVaultContract {
     }
 
     /**
-     * Emergency fund router (rescues stuck funds).
+     * Route pooled entry fees to agent trading wallets.
      */
-    async routeFunds(amountUsdc, recipient, secret) {
-        if (secret !== "alpha-rescue-2024") throw new Error("Unauthorized");
+    async routeFunds(arenaId, agentWallets, amountsUsdc) {
+        if (config.demoMode) return { success: true, txHash: "0xdemo-route" };
         this._init();
-        const amount = ethers.utils.parseUnits(String(amountUsdc), 6);
-        // This is a placeholder since the actual Vault contract might have different rescue logic.
-        // For Alpha Arena, we use the provider.call or similar if specialized.
-        logger.info(`Routing ${amountUsdc} USDC to ${recipient}...`);
-        return { success: true, txHash: "0xmanual" };
+        try {
+            const arenaBytes32 = ArenaVaultContract.arenaIdToBytes32(arenaId);
+            const amounts = amountsUsdc.map(a => ethers.utils.parseUnits(String(a.toFixed(6)), 6));
+
+            logger.info(`Routing funds for arena ${arenaId}...`, { agentWallets, amountsUsdc });
+            const tx = await this.contract.routeFunds(arenaBytes32, agentWallets, amounts, {
+                gasLimit: 500000
+            });
+            const receipt = await tx.wait();
+            return { success: true, txHash: tx.hash, blockNumber: receipt.blockNumber };
+        } catch (err) {
+            logger.error(`routeFunds failed: ${err.message}`);
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
+     * Distribute payouts to all users after competition ends.
+     */
+    async distributePayout(arenaId, recipients, amountsUsdc) {
+        if (config.demoMode) return { success: true, txHash: "0xdemo-payout" };
+        this._init();
+        try {
+            const arenaBytes32 = ArenaVaultContract.arenaIdToBytes32(arenaId);
+            const amounts = amountsUsdc.map(a => ethers.utils.parseUnits(String(a.toFixed(6)), 6));
+
+            logger.info(`Distributing payouts for arena ${arenaId} to ${recipients.length} users...`);
+            const tx = await this.contract.distributePayout(arenaBytes32, recipients, amounts, {
+                gasLimit: 800000
+            });
+            const receipt = await tx.wait();
+            return { success: true, txHash: tx.hash, blockNumber: receipt.blockNumber };
+        } catch (err) {
+            logger.error(`distributePayout failed: ${err.message}`);
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
+     * Return agent funds back to the vault.
+     */
+    async returnFunds(amountUsdc) {
+        if (config.demoMode) return { success: true, txHash: "0xdemo-return" };
+        this._init();
+        try {
+            const amount = ethers.utils.parseUnits(String(amountUsdc.toFixed(6)), 6);
+            logger.info(`Returning ${amountUsdc} USDC to vault...`);
+            const tx = await this.contract.returnFunds(amount, {
+                gasLimit: 200000
+            });
+            const receipt = await tx.wait();
+            return { success: true, txHash: tx.hash, blockNumber: receipt.blockNumber };
+        } catch (err) {
+            logger.error(`returnFunds failed: ${err.message}`);
+            return { success: false, error: err.message };
+        }
+    }
+
+    /**
+     * Emergency fund router (rescues stuck funds).
+     * @deprecated Use the contract methods directly.
+     */
+    async routeFundsLegacy(amountUsdc, recipient, secret) {
+        if (secret !== "alpha-rescue-2024") throw new Error("Unauthorized");
+        return this.returnFunds(amountUsdc);
     }
 }
 

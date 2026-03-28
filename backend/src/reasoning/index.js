@@ -7,7 +7,7 @@
  *
  * Return format (always consistent):
  * {
- *   action:     "BUY" | "SELL" | "HOLD",
+ *   action:     "BUY" | "SELL" | "HOLD" | "LONG" | "SHORT",
  *   token:      "WETH" | "WBTC" | "OKB",
  *   size:       number,
  *   confidence: number,
@@ -42,12 +42,12 @@ const DEMO_REASONS = {
 function mockReason(agentId, isPrivate) {
     _counter++;
     const biases = {
-        "whale-follower": ["BUY", "BUY", "HOLD"],
-        "momentum-trader": ["BUY", "BUY", "SELL"],
-        "risk-guard": ["HOLD", "HOLD", "BUY"],
+        "whale-follower": ["BUY", "LONG", "HOLD"],
+        "momentum-trader": ["BUY", "LONG", "SHORT"],
+        "risk-guard": ["HOLD", "HOLD", "SHORT"],
     };
     const tokens = ["WETH", "WBTC", "OKB"];
-    const pool = biases[agentId] || ["BUY", "SELL", "HOLD"];
+    const pool = biases[agentId] || ["BUY", "SELL", "HOLD", "LONG", "SHORT"];
     const action = pool[_counter % pool.length];
     const token = tokens[(_counter + ((agentId && agentId.length) || 0)) % 3];
     const conf = parseFloat((0.55 + ((_counter * 7) % 30) / 100).toFixed(2));
