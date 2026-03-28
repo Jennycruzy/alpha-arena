@@ -62,7 +62,14 @@ class ArenaManager {
   }
 
   getWaitingArena() {
-    return this.arenas.get(this.currentArenaId) || null;
+    let arena = this.arenas.get(this.currentArenaId);
+    // If current arena is missing, finished, or not in "waiting" status, ensure we have a fresh one
+    if (!arena || arena.status !== "waiting") {
+      logger.info(`[ArenaManager] Current arena ${this.currentArenaId || "N/A"} is ${arena ? arena.status : "missing"}. Ensuring waiting arena...`);
+      const newId = this._ensureWaitingArena();
+      arena = this.arenas.get(newId);
+    }
+    return arena;
   }
 
   getArena(arenaId) {
@@ -638,6 +645,7 @@ class ArenaManager {
     if (!saved || !saved.arenas) return;
 
     this.currentArenaId = saved.currentArenaId;
+    let foundCurrent = false;
     for (const a of saved.arenas) {
       this.arenas.set(a.id, {
         ...a,
