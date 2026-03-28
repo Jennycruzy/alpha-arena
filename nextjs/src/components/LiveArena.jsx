@@ -33,7 +33,7 @@ function XPBar({ xp, xpToNextLevel }) {
 }
 
 export default function LiveArena() {
-    const { leaderboard, remainingMs, selectedAgent, tradeLog, reasoningLog, evolutionLog, isPrivateArena, config } = useArena();
+    const { arenaId, leaderboard, remainingMs, selectedAgent, tradeLog, reasoningLog, evolutionLog, isPrivateArena, config } = useArena();
     const explorerUrl = config?.explorerUrl;
     const durationSecs = config?.durationSeconds || 300;
 
