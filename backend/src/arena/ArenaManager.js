@@ -637,7 +637,7 @@ class ArenaManager {
     logger.info("📡 Starting blockchain state recovery sync...");
 
     try {
-      const recentDeposits = await arenaVault.getRecentDeposits(-5000); // Check last ~15 hours
+      const recentDeposits = await arenaVault.getRecentDeposits(-20000); // Check last ~11 hours
       if (!recentDeposits || recentDeposits.length === 0) return;
 
       const arena = this.getWaitingArena();
