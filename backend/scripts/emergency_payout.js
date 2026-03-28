@@ -40,36 +40,47 @@ async function blockchain_recovery() {
 
     // 1. Scan for recent deposits in CHUNKS (X Layer limit is 100 blocks)
     const currentBlock = await provider.getBlockNumber();
-    const lookback = 60000; // ~12 hours is usually enough
+    const lookback = 100000; // ~24+ hours
     const startBlock = currentBlock - lookback;
     console.log(`Scanning from block ${startBlock} to ${currentBlock} in 100-block chunks...`);
 
     const filter = vault.filters.Deposited();
     let logs = [];
-
+    const chunks = [];
     for (let chunkTo = currentBlock; chunkTo > startBlock; chunkTo -= 100) {
         const chunkFrom = Math.max(chunkTo - 99, startBlock);
-        process.stdout.write(`\r🔍 Progress: ${(((currentBlock - chunkTo) / lookback) * 100).toFixed(1)}%... `);
-        try {
-            const chunkLogs = await vault.queryFilter(filter, chunkFrom, chunkTo);
-            logs = logs.concat(chunkLogs);
-        } catch (e) {
-            // If weird error, just continue
-        }
+        chunks.push({ from: chunkFrom, to: chunkTo });
     }
-    process.stdout.write(`\n`);
+
+    console.log(`Scanning ${chunks.length} chunks in parallel...`);
+    const concurrency = 20;
+    for (let i = 0; i < chunks.length; i += concurrency) {
+        const batch = chunks.slice(i, i + concurrency);
+        process.stdout.write(`\r🔍 Progress: ${((i / chunks.length) * 100).toFixed(1)}%... `);
+        const results = await Promise.all(batch.map(c =>
+            vault.queryFilter(filter, c.from, c.to).catch(e => {
+                console.warn(`\n⚠️ Error on chunk ${c.from}-${c.to}: ${e.message}`);
+                return [];
+            })
+        ));
+        for (const r of results) logs = logs.concat(r);
+    }
+    process.stdout.write(`\r🔍 Progress: 100.0%!      \n`);
 
     console.log(`Found ${logs.length} total deposit events in history.`);
 
     const arenasToRefund = new Map(); // arenaId -> { user -> amount }
 
     for (const log of logs) {
-        const { arenaId, user, amount } = log.args;
+        const arenaId = log.args.arenaId;
+        const user = log.args.user;
+        const amount = BigInt(log.args.amount.toString());
+
         if (!arenasToRefund.has(arenaId)) {
             arenasToRefund.set(arenaId, new Map());
         }
         const userMap = arenasToRefund.get(arenaId);
-        userMap.set(user, (userMap.get(user) || BigInt(0)) + amount);
+        userMap.set(user, (userMap.get(user) || 0n) + amount);
     }
 
     for (const [arenaId, users] of arenasToRefund.entries()) {
@@ -97,18 +108,19 @@ async function blockchain_recovery() {
 
         try {
             if (!isRouted) {
-                console.log(`🚀 ROUTING (REFUND) to ${recipients.length} users...`);
-                // Use a larger gas limit to be safe
+                console.log(`🚀 ROUTING for arena ${arenaId.slice(0, 10)}...`);
                 const tx = await vault.routeFunds(arenaId, recipients, amounts, { gasLimit: 1000000 });
-                console.log(`Tx: ${tx.hash}. Waiting...`);
                 await tx.wait();
-                console.log("✅ REFUND ROUTED!");
-            } else {
-                console.log(`🚀 DISTRIBUTING PAYOUT to ${recipients.length} users...`);
+                console.log("✅ ROUTED!");
+            }
+
+            // Re-check after routing
+            const alreadyPaid = await vault.payoutDistributed(arenaId);
+            if (!alreadyPaid) {
+                console.log(`🚀 DISTRIBUTING to ${recipients.length} users...`);
                 const tx = await vault.distributePayout(arenaId, recipients, amounts, { gasLimit: 1000000 });
-                console.log(`Tx: ${tx.hash}. Waiting...`);
                 await tx.wait();
-                console.log("✅ PAYOUT DISTRIBUTED!");
+                console.log("✅ DISTRIBUTED!");
             }
         } catch (err) {
             console.error(`❌ Error refunding ${arenaId}: ${err.message}`);
