@@ -110,23 +110,24 @@ router.get("/spectate/:arenaId/reasoning", asyncHandler(async (req, res) => {
 
 // ─── Join Arena (x402 protected) ─────────────────────────────────────────────
 router.post("/arena/join", require402, asyncHandler(async (req, res) => {
-  const { userId, agentId, isPrivate = false } = req.body;
-  if (!userId || !agentId) {
-    return res.status(400).json({ error: "userId and agentId required" });
+  const { userId, allocations, isPrivate = true, arenaId } = req.body;
+  if (!userId || !allocations) {
+    return res.status(400).json({ error: "userId and allocations required" });
   }
 
-  let paymentAmount = config.competition.entryFeeUsd;
+  // Verify payment if not in demo mode
+  let finalEntryFee = config.competition.entryFeeUsd;
   if (!config.demoMode && req.paymentTxHash) {
     try {
-      const result = await verifyPayment(req.paymentTxHash, req.body.arenaId, userId);
-      paymentAmount = result.amount;
+      const v = await verifyPayment(req.paymentTxHash, arenaId, userId);
+      finalEntryFee = v.amount;
     } catch (err) {
       return res.status(402).json({ error: `Payment verification failed: ${err.message}` });
     }
   }
 
   try {
-    const result = arenaManager.joinArena(userId, agentId, paymentAmount, { isPrivate });
+    const result = arenaManager.joinArena(userId, allocations, finalEntryFee, { isPrivate });
     res.json(result);
   } catch (err) {
     res.status(400).json({ error: err.message });

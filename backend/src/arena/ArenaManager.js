@@ -140,52 +140,38 @@ class ArenaManager {
 
   // ── Join ────────────────────────────────────────────────────────────────────
 
-  joinArena(userId, agentId, entryFee, { isPrivate = false } = {}) {
-    let arena = this.getWaitingArena();
-    if (!arena || arena.status !== "waiting") throw new Error("No arena available");
-    if (!AGENT_META[agentId]) throw new Error(`Invalid agent: ${agentId}`);
-    if (arena.users.find((u) => u.userId.toLowerCase() === userId.toLowerCase())) {
-      throw new Error("User already in this arena");
-    }
+  joinArena(userId, allocations, entryFee, { isPrivate = true } = {}) {
+    // Solo Director Mode: Every join creates a new private arena
+    const arenaId = this._ensureWaitingArena();
+    const arena = this.arenas.get(arenaId);
+    arena.isPrivate = isPrivate;
 
-    // Set privacy mode on first join
-    if (arena.users.length === 0) {
-      arena.isPrivate = isPrivate;
-    }
-
-    const user = { userId, agentId, entryFee, joinedAt: Date.now() };
+    // allocations: { [agentId]: weight } e.g. { "whale-follower": 0.5, "momentum-trader": 0.5 }
+    // We store the weights in the user object
+    const user = { userId, allocations, entryFee, joinedAt: Date.now() };
     arena.users.push(user);
 
-    if (!arena.agentUsers[agentId]) arena.agentUsers[agentId] = [];
-    arena.agentUsers[agentId].push(userId);
+    // Map agents to this user
+    for (const agentId of Object.keys(allocations)) {
+      if (!arena.agentUsers[agentId]) arena.agentUsers[agentId] = [];
+      arena.agentUsers[agentId].push(userId);
+    }
 
-    logger.info(`User ${userId.slice(0, 8)} joined → ${AGENT_META[agentId].name} (${arena.isPrivate ? "🔒 PRIVATE" : "👁 PUBLIC"})`);
+    logger.info(`Solo Director ${userId.slice(0, 8)} started arena ${arenaId.slice(0, 8)} (${arena.isPrivate ? "🔒 PRIVATE" : "👁 PUBLIC"})`);
 
     this.broadcast("user_joined", {
       arenaId: arena.id,
       userId,
-      agentId,
-      agentName: AGENT_META[agentId].name,
-      totalUsers: arena.users.length,
+      allocations,
+      totalEntryFee: entryFee,
       isPrivate: arena.isPrivate,
-      agentSelections: this._getAgentSelections(arena),
     });
 
-    const ready = this._isReadyToStart(arena);
-    if (ready) this._startArena(arena);
-
-    // 10-minute timeout for waiting arenas (if no one else joins, refund)
-    if (!arena.expireTimer) {
-      arena.expireTimer = setTimeout(() => {
-        if (arena.status === "waiting" && arena.users.length > 0 && arena.users.length < 3) {
-          logger.info(`Arena ${arena.id.slice(0, 8)} wait timeout — refunding ${arena.users.length} users...`);
-          this._refundArena(arena);
-        }
-      }, 10 * 60 * 1000);
-    }
+    // Start immediately in solo mode
+    this._startArena(arena);
 
     this._saveStates();
-    return { arenaId: arena.id, joined: true, readyToStart: ready, isPrivate: arena.isPrivate };
+    return { arenaId: arena.id, joined: true, readyToStart: true, isPrivate: arena.isPrivate };
   }
 
   _isReadyToStart(arena) {
@@ -216,17 +202,23 @@ class ArenaManager {
 
     logger.info(`🔥 Arena ${arena.id.slice(0, 8)} STARTING (${arena.isPrivate ? "PRIVATE" : "PUBLIC"}) | Duration: ${duration}s`);
 
+    // Calculate capital for each agent based on user allocations
     const agentCapitals = {};
     for (const user of arena.users) {
-      agentCapitals[user.agentId] = (agentCapitals[user.agentId] || 0) + user.entryFee;
+      for (const [agentId, weight] of Object.entries(user.allocations || {})) {
+        agentCapitals[agentId] = (agentCapitals[agentId] || 0) + (user.entryFee * weight);
+      }
     }
 
-    // Route funds on-chain
-    const agentWallets = Object.keys(arena.agentUsers).map(() => config.arenaWallet.address);
-    const amounts = Object.keys(arena.agentUsers).map((id) => agentCapitals[id] || 0);
-    arenaVault.routeFunds(arena.id, agentWallets, amounts).catch((err) =>
-      logger.warn(`routeFunds failed (non-blocking): ${err.message}`)
-    );
+    // Route funds on-chain (use first user's wallet as recipient proxy for all agents in solo mode)
+    const agentWallets = Object.keys(agentCapitals).map(() => config.arenaWallet.address);
+    const amounts = Object.keys(agentCapitals).map((id) => agentCapitals[id]);
+
+    if (amounts.some(a => a > 0)) {
+      arenaVault.routeFunds(arena.id, agentWallets, amounts).catch((err) =>
+        logger.warn(`routeFunds failed (non-blocking): ${err.message}`)
+      );
+    }
 
     // Create agents + attach callbacks
     for (const agentId of Object.values(AGENT_IDS)) {

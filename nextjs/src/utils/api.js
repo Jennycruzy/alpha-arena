@@ -42,12 +42,12 @@ export const api = {
     getAllArenas: () => request("/arenas"),
     getPublicArenas: () => request("/arenas/public"),
 
-    /** Join arena: optional X-Payment (x402) + privacy mode flag */
-    joinArena: (userId, agentId, arenaId, paymentTxHash = null, isPrivate = false) =>
+    /** Join arena: optional X-Payment (x402) + allocations map */
+    joinArena: (userId, allocations, arenaId, paymentTxHash = null, isPrivate = true) =>
         request("/arena/join", {
             method: "POST",
             headers: paymentTxHash ? { "X-Payment": paymentTxHash } : {},
-            body: JSON.stringify({ userId, agentId, arenaId, isPrivate }),
+            body: JSON.stringify({ userId, allocations, arenaId, isPrivate }),
         }),
 
     // ── Spectator (no wallet required) ───────────────────────────────────────
