@@ -519,6 +519,11 @@ class ArenaManager {
       logger.error(`Refund lifecycle error: ${err.message}`);
     }
 
+    this.broadcast("arena_refunded", {
+      arenaId: arena.id,
+      message: "Arena cancelled and funds refunded.",
+    });
+
     // Create a fresh arena for the next attempt
     this._ensureWaitingArena();
   }
@@ -715,6 +720,15 @@ class ArenaManager {
       }
     }
     return { success: true, count: arenas.length };
+  }
+
+  forceStartArena(arenaId) {
+    const arena = this.arenas.get(arenaId);
+    if (!arena || arena.status !== "waiting") return false;
+
+    logger.info(`⚡ Force starting arena ${arenaId.slice(0, 8)}...`);
+    this._startArena(arena);
+    return true;
   }
 }
 

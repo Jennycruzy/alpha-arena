@@ -212,4 +212,12 @@ router.post("/arena/settle-all", async (req, res) => {
   res.json(result);
 });
 
+router.post("/arena/force-start", (req, res) => {
+  const { arenaId, secret } = req.body;
+  if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
+
+  const success = arenaManager.forceStartArena(arenaId);
+  res.json({ success });
+});
+
 export default router;

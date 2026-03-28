@@ -143,6 +143,17 @@ export function ArenaProvider({ children }) {
             ws.on("copy_trade_reasoning", (data) => {
                 setCopyTradeLog((p) => [data, ...p].slice(0, 50));
             }),
+            ws.on("arena_refunded", (data) => {
+                if (!arenaId || data.arenaId === arenaId) {
+                    setPhase("waiting");
+                    setArenaId(null);
+                    setAgentSelections({});
+                    setLeaderboard([]);
+                }
+            }),
+            ws.on("payout_completed", (data) => {
+                // ... optional: show a toast or notification ...
+            }),
         ];
         return () => unsubs.forEach((fn) => fn?.());
     }, [ws, arenaId]);
