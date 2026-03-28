@@ -148,7 +148,7 @@ export class ArenaVaultContract {
      * Recovery tool: scan recent history for deposits.
      * X Layer RPC has a 100-block limit. This fetcher chunks the request.
      */
-    async getRecentDeposits(lookbackBlocks = 30000) {
+    async getRecentDeposits(lookbackBlocks = 60000) {
         if (config.demoMode) return [];
         this._init();
         try {
