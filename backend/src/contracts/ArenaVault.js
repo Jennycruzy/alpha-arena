@@ -96,6 +96,53 @@ export class ArenaVaultContract {
     }
 
     /**
+     * Native fetch with AbortController to prevent Ethers v5 from silently hanging 
+     * when the public RPC drops the connection on historical queries.
+     */
+    async _fetchLogsNative(fromBlock, toBlock) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+
+        try {
+            const body = {
+                jsonrpc: "2.0",
+                method: "eth_getLogs",
+                params: [{
+                    address: this.address,
+                    fromBlock: "0x" + fromBlock.toString(16),
+                    toBlock: "0x" + toBlock.toString(16)
+                }],
+                id: 1
+            };
+
+            const response = await fetch(config.chain.rpcUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+            const data = await response.json();
+
+            if (data.error) {
+                throw new Error(data.error.message || "RPC Error");
+            }
+
+            // Convert raw RPC logs back to Ethers Log format so interface.parseLog works
+            return (data.result || []).map(log => ({
+                topics: log.topics,
+                data: log.data,
+                blockNumber: parseInt(log.blockNumber, 16),
+                transactionHash: log.transactionHash
+            }));
+        } catch (err) {
+            clearTimeout(timeoutId);
+            throw err;
+        }
+    }
+
+    /**
      * Recovery tool: scan recent history for deposits.
      * X Layer RPC has a 100-block limit. This fetcher chunks the request.
      */
@@ -105,18 +152,18 @@ export class ArenaVaultContract {
         try {
             const currentBlock = await this.provider.getBlockNumber();
             const fromBlock = currentBlock - lookbackBlocks;
-            const filter = this.contract.filters.Deposited();
 
             let allLogs = [];
             for (let chunkTo = currentBlock; chunkTo > fromBlock; chunkTo -= 99) {
                 const chunkFrom = Math.max(chunkTo - 98, fromBlock);
                 try {
-                    const logs = await this.contract.queryFilter(filter, chunkFrom, chunkTo);
+                    const logs = await this._fetchLogsNative(chunkFrom, chunkTo);
                     allLogs = allLogs.concat(logs);
                 } catch (chunkErr) {
                     logger.warn(`Chunk ${chunkFrom}-${chunkTo} failed: ${chunkErr.message}`);
-                    // If RPC forcefully rejects the deep history outright, we stop querying further back
-                    if (chunkErr.message.includes("limit") || chunkErr.message.includes("range")) {
+                    if (chunkErr.name === "AbortError") {
+                        logger.warn(`RPC silent hang detected (Timeout). Skipping chunk.`);
+                    } else if (chunkErr.message.includes("limit") || chunkErr.message.includes("range")) {
                         break;
                     }
                 }
@@ -125,14 +172,18 @@ export class ArenaVaultContract {
             }
 
             return allLogs.map(l => {
-                const parsed = this.contract.interface.parseLog(l);
-                return {
-                    arenaId: parsed.args.arenaId,
-                    user: parsed.args.user,
-                    amount: parseFloat(ethers.utils.formatUnits(parsed.args.amount, 6)),
-                    blockNumber: l.blockNumber
-                };
-            });
+                try {
+                    const parsed = this.contract.interface.parseLog(l);
+                    return {
+                        arenaId: parsed.args.arenaId,
+                        user: parsed.args.user,
+                        amount: parseFloat(ethers.utils.formatUnits(parsed.args.amount, 6)),
+                        blockNumber: l.blockNumber
+                    };
+                } catch (e) {
+                    return null;
+                }
+            }).filter(Boolean);
         } catch (err) {
             logger.warn(`getRecentDeposits failed: ${err.message}`);
             return [];
