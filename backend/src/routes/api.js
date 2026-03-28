@@ -80,7 +80,7 @@ router.get("/arena/current", asyncHandler(async (_req, res) => {
 router.get("/arena/user/:userId", asyncHandler(async (req, res) => {
   const arena = arenaManager.getArenaForUser(req.params.userId);
   if (!arena) return res.status(404).json({ error: "User not in any arena" });
-  const view = arenaManager.getSpectatorView(arena.id);
+  const view = arenaManager.getSpectatorView(arena.id, req.params.userId);
   const user = arena.users.find(
     (u) => u.userId.toLowerCase() === req.params.userId.toLowerCase()
   );

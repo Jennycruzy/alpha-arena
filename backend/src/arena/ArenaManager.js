@@ -90,20 +90,29 @@ class ArenaManager {
     }));
   }
 
-  getSpectatorView(arenaId) {
+  getSpectatorView(arenaId, forUserId = null) {
     const arena = this.arenas.get(arenaId);
     if (!arena) return null;
 
     const leaderboard = arena.status === "active"
       ? Object.entries(arena.agents)
-        .map(([agentId, agent]) => ({
-          ...agent.getStatus(),
-          ...AGENT_META[agentId],
-          userCount: (arena.agentUsers[agentId] || []).length,
-          pooledCapital: arena.users
-            .filter((u) => u.agentId === agentId)
-            .reduce((s, u) => s + u.entryFee, 0),
-        }))
+        .map(([agentId, agent]) => {
+          // Calculate pooled capital for this agent across all users' allocations
+          const pooledCapital = arena.users.reduce((sum, u) => {
+            if (u.allocations && u.allocations[agentId]) {
+              return sum + (u.entryFee * (u.allocations[agentId] || 0));
+            }
+            if (u.agentId === agentId) return sum + u.entryFee; // Legacy support
+            return sum;
+          }, 0);
+
+          return {
+            ...agent.getStatus(),
+            ...AGENT_META[agentId],
+            userCount: (arena.agentUsers[agentId] || []).length,
+            pooledCapital: parseFloat(pooledCapital.toFixed(4)),
+          };
+        })
         .sort((a, b) => b.roi - a.roi)
       : [];
 
@@ -122,7 +131,7 @@ class ArenaManager {
       endTime: arena.endTime,
       remainingMs: arena.endTime ? Math.max(0, arena.endTime - Date.now()) : 0,
       leaderboard,
-      reasoningLog: arena.isPrivate ? [] : (arena.reasoningLog || []).slice(0, 30),
+      reasoningLog: (arena.isPrivate && forUserId !== arena.creatorId) ? [] : (arena.reasoningLog || []).slice(0, 30),
       results: arena.results,
       agentSelections: this._getAgentSelections(arena),
     };
@@ -130,10 +139,12 @@ class ArenaManager {
 
   // ── Join ────────────────────────────────────────────────────────────────────
 
-  joinArena(userId, allocations, entryFee) {
+  joinArena(userId, allocations, entryFee, options = {}) {
+    const { isPrivate = true } = options;
     // ⚔️ SOLO DIRECTOR MODE: Ensure we are using a unique arena
     const arena = this.getWaitingArena();
     arena.creatorId = userId;
+    arena.isPrivate = isPrivate; // Apply pref
 
     // allocations: { [agentId]: weight } e.g. { "whale-follower": 0.5, "momentum-trader": 0.5 }
     const user = { userId, allocations, entryFee, joinedAt: Date.now() };
@@ -286,14 +297,22 @@ class ArenaManager {
     if (arena.status !== "active") return;
 
     const leaderboard = Object.entries(arena.agents)
-      .map(([agentId, agent]) => ({
-        ...agent.getStatus(),
-        ...AGENT_META[agentId],
-        userCount: arena.agentUsers[agentId].length,
-        pooledCapital: arena.users
-          .filter((u) => u.agentId === agentId)
-          .reduce((s, u) => s + u.entryFee, 0),
-      }))
+      .map(([agentId, agent]) => {
+        const pooledCapital = arena.users.reduce((sum, u) => {
+          if (u.allocations && u.allocations[agentId]) {
+            return sum + (u.entryFee * (u.allocations[agentId] || 0));
+          }
+          if (u.agentId === agentId) return sum + u.entryFee;
+          return sum;
+        }, 0);
+
+        return {
+          ...agent.getStatus(),
+          ...AGENT_META[agentId],
+          userCount: arena.agentUsers[agentId].length,
+          pooledCapital: parseFloat(pooledCapital.toFixed(4)),
+        };
+      })
       .sort((a, b) => b.roi - a.roi);
 
     // Compute win probability (rank-weighted ROI)
@@ -343,33 +362,56 @@ class ArenaManager {
     const winnerProfit = winner.currentBalance - winner.initialBalance;
 
     for (const user of arena.users) {
-      const isWinner = user.agentId === winner.agentId;
-      const agent = arena.agents[user.agentId];
-      const agentStatus = agent ? agent.getStatus() : null;
-      const agentCapital = arena.users
-        .filter((u) => u.agentId === user.agentId)
-        .reduce((s, u) => s + u.entryFee, 0);
+      // Calculate user's total payout based on their allocations across all agents
+      let totalUserPayout = 0;
+      let totalUserProfit = 0;
 
-      let payout;
-      if (isWinner && winnerProfit > 0) {
-        const userShare = user.entryFee / agentCapital;
-        payout = user.entryFee + winnerProfit * userShare;
-      } else if (isWinner) {
-        const currentBal = agentStatus ? agentStatus.currentBalance : 0;
-        payout = currentBal * (user.entryFee / agentCapital);
+      if (user.allocations) {
+        for (const [agentId, weight] of Object.entries(user.allocations)) {
+          const agent = arena.agents[agentId];
+          const agentStatus = agent ? agent.getStatus() : null;
+          const isWinningAgent = agentId === winner.agentId;
+
+          // Agent's total capital from all users
+          const agentCapital = arena.users.reduce((s, u) => s + (u.entryFee * (u.allocations[agentId] || 0)), 0);
+          const agentProfit = agentStatus ? (agentStatus.currentBalance - agentStatus.initialBalance) : 0;
+          const userAgentStake = user.entryFee * weight;
+          const userShare = agentCapital > 0 ? (userAgentStake / agentCapital) : 0;
+
+          let agentPayout;
+          if (isWinningAgent && agentProfit > 0) {
+            agentPayout = userAgentStake + agentProfit * userShare;
+          } else {
+            const currentBal = agentStatus ? agentStatus.currentBalance : 0;
+            agentPayout = agentCapital > 0 ? (currentBal * userShare) : 0;
+          }
+
+          totalUserPayout += agentPayout;
+          totalUserProfit += (agentPayout - userAgentStake);
+        }
       } else {
-        const currentBal = agentStatus ? agentStatus.currentBalance : 0;
-        payout = Math.max(0, currentBal * (user.entryFee / agentCapital));
+        // Legacy single agent logic
+        const isWinner = user.agentId === winner.agentId;
+        const agent = arena.agents[user.agentId];
+        const agentStatus = agent ? agent.getStatus() : null;
+        const agentCapital = arena.users
+          .filter((u) => u.agentId === user.agentId)
+          .reduce((s, u) => s + u.entryFee, 0);
+
+        if (isWinner && winnerProfit > 0) {
+          const userShare = user.entryFee / agentCapital;
+          totalUserPayout = user.entryFee + winnerProfit * userShare;
+        } else {
+          const currentBal = agentStatus ? agentStatus.currentBalance : 0;
+          totalUserPayout = Math.max(0, currentBal * (user.entryFee / agentCapital));
+        }
+        totalUserProfit = totalUserPayout - user.entryFee;
       }
 
       payouts.push({
         userId: user.userId,
-        agentId: user.agentId,
-        agentName: AGENT_META[user.agentId].name,
-        entryFee: user.entryFee,
-        payout: parseFloat(payout.toFixed(4)),
-        profit: parseFloat((payout - user.entryFee).toFixed(4)),
-        isWinner,
+        payout: parseFloat(totalUserPayout.toFixed(4)),
+        profit: parseFloat(totalUserProfit.toFixed(4)),
       });
     }
 
