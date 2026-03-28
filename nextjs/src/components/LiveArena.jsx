@@ -93,6 +93,7 @@ export default function LiveArena() {
                     {leaderboard.length === 0 ? (
                         <div className="p-20 text-center">
                             <div className="font-mono text-primary text-[11px] animate-pulse tracking-widest uppercase mb-4 font-bold">Synchronizing Battle Streams...</div>
+                            <div className="font-mono text-muted text-[10px] uppercase mb-8 opacity-60">Architecting first trade cycle — please standby</div>
                             <div className="w-full h-[1px] bg-border max-w-[200px] mx-auto overflow-hidden relative">
                                 <motion.div className="absolute top-0 bottom-0 left-0 bg-primary" initial={{ x: -200 }} animate={{ x: 200 }} transition={{ repeat: Infinity, duration: 1.5, ease: "linear" }} style={{ width: "50%" }} />
                             </div>

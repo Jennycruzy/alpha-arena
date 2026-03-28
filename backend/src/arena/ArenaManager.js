@@ -156,6 +156,8 @@ class ArenaManager {
     });
 
     const ready = this._isReadyToStart(arena);
+    if (ready) this._startArena(arena);
+
     // 10-minute timeout for waiting arenas (if no one else joins, refund)
     if (!arena.expireTimer) {
       arena.expireTimer = setTimeout(() => {
