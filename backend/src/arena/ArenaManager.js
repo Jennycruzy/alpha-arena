@@ -9,12 +9,10 @@ import persistence from "../utils/persistence.js";
 class ArenaManager {
   constructor() {
     this.arenas = new Map();
-    this.currentArenaId = null;
     this.wsClients = new Set();
 
     // Copy-winner sessions: userId -> { agentId, session }
     this.copyTradeSessions = new Map();
-    this.currentArenaId = null;
 
     this._loadStates();
     // No more global waiting arena. Every director gets their own.
@@ -42,7 +40,7 @@ class ArenaManager {
     this.arenas.set(id, {
       id,
       status: "waiting",
-      isPrivate: false, // set during creation
+      isPrivate: true,
       users: [],
       agents: {},
       agentUsers: {},
@@ -53,8 +51,7 @@ class ArenaManager {
       results: null,
       reasoningLog: [], // recent reasoning entries from all agents
     });
-    this.currentArenaId = id;
-    logger.info(`Arena ${id.slice(0, 8)} created (waiting)`);
+    logger.info(`Arena ${id.slice(0, 8)} created (waiting-solo)`);
     this._saveStates();
     return id;
   }
@@ -62,9 +59,7 @@ class ArenaManager {
   getWaitingArena() {
     // Solo Director Mode: Every request for a current arena gets a fresh one.
     const id = this._ensureWaitingArena();
-    const arena = this.arenas.get(id);
-    arena.isPrivate = true; // Always private by default now
-    return arena;
+    return this.arenas.get(id);
   }
 
   getArena(arenaId) {
@@ -135,18 +130,12 @@ class ArenaManager {
 
   // ── Join ────────────────────────────────────────────────────────────────────
 
-  joinArena(userId, allocations, entryFee, { isPrivate = true } = {}) {
-    // ⚔️ SOLO DIRECTOR MODE: Ensure we are using the user's specific waiting arena
-    // If user is already in an arena, use that, otherwise create a new one.
-    let arena = [...this.arenas.values()].find(a => a.status === 'waiting' && a.users.length === 0);
-    if (!arena) {
-      const id = this._ensureWaitingArena();
-      arena = this.arenas.get(id);
-    }
-    arena.isPrivate = true; // Force solo
+  joinArena(userId, allocations, entryFee) {
+    // ⚔️ SOLO DIRECTOR MODE: Ensure we are using a unique arena
+    const arena = this.getWaitingArena();
+    arena.creatorId = userId;
 
     // allocations: { [agentId]: weight } e.g. { "whale-follower": 0.5, "momentum-trader": 0.5 }
-    // We store the weights in the user object
     const user = { userId, allocations, entryFee, joinedAt: Date.now() };
     arena.users.push(user);
 
@@ -156,7 +145,7 @@ class ArenaManager {
       arena.agentUsers[agentId].push(userId);
     }
 
-    logger.info(`Solo Director ${userId.slice(0, 8)} started arena ${arenaId.slice(0, 8)} (${arena.isPrivate ? "🔒 PRIVATE" : "👁 PUBLIC"})`);
+    logger.info(`Solo Director ${userId.slice(0, 8)} started arena ${arena.id.slice(0, 8)}`);
 
     this.broadcast("user_joined", {
       arenaId: arena.id,
