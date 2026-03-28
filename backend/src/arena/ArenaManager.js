@@ -494,7 +494,8 @@ class ArenaManager {
 
           // 3. Distribute to recipients
           logger.info(`[Payout Attempt ${retryCount + 1}] Distributing payout to ${recipients.length} recipients...`);
-          const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+          const parsedAmounts = amounts.map(a => ethers.utils.parseUnits(a.toFixed(6), 6));
+          const r = await arenaVault.distributePayout(arena.id, recipients, parsedAmounts);
           if (r.success) {
             logger.info(`ArenaVault payout tx confirmed: ${r.txHash}`);
             break; // Success! Exit loop.
@@ -552,7 +553,8 @@ class ArenaManager {
     let retryCount = 0;
     while (retryCount < 3) {
       try {
-        const r = await arenaVault.distributePayout(arenaId, recipients, amounts);
+        const parsedAmounts = amounts.map(a => ethers.utils.parseUnits(a.toFixed(6), 6));
+        const r = await arenaVault.distributePayout(arenaId, recipients, parsedAmounts);
         if (r.success) {
           logger.info(`✅ RESCUE SUCCESS: ${r.txHash}`);
           return { success: true, txHash: r.txHash };
