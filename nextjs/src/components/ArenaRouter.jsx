@@ -14,7 +14,6 @@ function ArenaSwitch() {
             <div className="noise-overlay" />
             {phase === "landing" && <Landing />}
             {phase === "select" && <AgentSelect />}
-            {phase === "waiting" && <WaitingRoom />}
             {phase === "live" && <LiveArena />}
             {phase === "results" && <Results />}
         </div>

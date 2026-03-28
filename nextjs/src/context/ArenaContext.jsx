@@ -57,7 +57,8 @@ export function ArenaProvider({ children }) {
                     if (data.myAgentId) setSelectedAgent(data.myAgentId);
                     setAgentSelections(data.agentSelections || {});
                     if (data.isPrivate !== undefined) setIsPrivateArena(data.isPrivate);
-                    setPhase("waiting");
+                    // For Solo Director pivot: always go to Live even if backend hasn't quite caught up
+                    setPhase("live");
                 } else if (data.status === "completed") {
                     setResults(data.results);
                     setPhase("results");
