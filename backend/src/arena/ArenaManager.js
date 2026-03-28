@@ -156,7 +156,15 @@ class ArenaManager {
     });
 
     const ready = this._isReadyToStart(arena);
-    if (ready) this._startArena(arena);
+    // 10-minute timeout for waiting arenas (if no one else joins, refund)
+    if (!arena.expireTimer) {
+      arena.expireTimer = setTimeout(() => {
+        if (arena.status === "waiting" && arena.users.length > 0 && arena.users.length < 3) {
+          logger.info(`Arena ${arena.id.slice(0, 8)} wait timeout — refunding ${arena.users.length} users...`);
+          this._refundArena(arena);
+        }
+      }, 10 * 60 * 1000);
+    }
 
     return { arenaId: arena.id, joined: true, readyToStart: ready, isPrivate: arena.isPrivate };
   }
@@ -426,6 +434,58 @@ class ArenaManager {
     })();
 
     return arena.results;
+  }
+
+  /**
+   * Manual Rescue: Force a payout for a specific arena that failed in-memory.
+   */
+  async rescuePayout(arenaId, recipients, amounts) {
+    logger.info(`🆘 Manual Rescue triggered for arena ${arenaId}`);
+    const totalReturn = amounts.reduce((s, a) => s + a, 0);
+
+    // Run the robust retry loop for these fixed recipients
+    let retryCount = 0;
+    const maxRetries = 3;
+    while (retryCount < maxRetries) {
+      try {
+        if (totalReturn > 0) {
+          const rawReturn = BigInt(Math.floor(totalReturn * 1e6));
+          await approveToken(config.tokens.USDC, config.arenaVaultAddress, rawReturn);
+          await new Promise(r => setTimeout(r, 4000));
+          await arenaVault.returnFunds(totalReturn);
+          await new Promise(r => setTimeout(r, 6000));
+        }
+        const r = await arenaVault.distributePayout(arenaId, recipients, amounts);
+        if (r.success) return { success: true, txHash: r.txHash };
+        throw new Error(r.error);
+      } catch (err) {
+        retryCount++;
+        if (retryCount >= maxRetries) throw err;
+        await new Promise(r => setTimeout(r, 10000));
+      }
+    }
+  }
+
+  async _refundArena(arena) {
+    arena.status = "refunded";
+    const recipients = arena.users.map(u => u.userId);
+    const amounts = arena.users.map(u => u.entryFee);
+
+    logger.info(`Initiating bulk refund for arena ${arena.id.slice(0, 8)} (${recipients.length} users)`);
+    try {
+      // For refunds, funds are already in the vault from the deposit
+      const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+      if (r.success) {
+        logger.info(`Refund successful: ${r.txHash}`);
+      } else {
+        logger.error(`Refund failed: ${r.error}`);
+      }
+    } catch (err) {
+      logger.error(`Refund lifecycle error: ${err.message}`);
+    }
+
+    // Create a fresh arena for the next attempt
+    this._ensureWaitingArena();
   }
 
   // ── Copy Winner Session ─────────────────────────────────────────────────────
