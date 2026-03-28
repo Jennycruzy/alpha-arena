@@ -347,6 +347,12 @@ class ArenaManager {
     const winner = standings[0];
     const payouts = [];
     const totalPool = arena.users.reduce((s, u) => s + u.entryFee, 0);
+    if (totalPool === 0 || arena.users.length === 0) {
+      logger.info(`⏩ Arena ${arena.id.slice(0, 8)} has no users/funds, skipping on-chain payout.`);
+      this._saveStates();
+      return;
+    }
+
     const winnerProfit = winner.currentBalance - winner.initialBalance;
 
     for (const user of arena.users) {
@@ -505,6 +511,12 @@ class ArenaManager {
     arena.status = "refunded";
     const recipients = arena.users.map(u => u.userId);
     const amounts = arena.users.map(u => u.entryFee);
+
+    if (recipients.length === 0) {
+      logger.info(`⏩ Arena ${arena.id.slice(0, 8)} is empty, nothing to refund.`);
+      this._saveStates();
+      return;
+    }
 
     logger.info(`Initiating bulk refund (routing) for arena ${arena.id.slice(0, 8)} (${recipients.length} users)`);
     try {
@@ -720,6 +732,7 @@ class ArenaManager {
         await this._endArena(arena);
       }
     }
+    this._saveStates();
     return { success: true, count: arenas.length };
   }
 
