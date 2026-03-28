@@ -38,15 +38,28 @@ async function blockchain_recovery() {
     console.log(`Vault: ${vaultAddress}`);
     console.log(`Operator: ${wallet.address}`);
 
-    // 1. Scan for recent deposits
+    // 1. Scan for recent deposits in CHUNKS (X Layer limit is 100 blocks)
     const currentBlock = await provider.getBlockNumber();
-    const fromBlock = currentBlock - 100000; // Look back ~1 day
-    console.log(`Scanning from block ${fromBlock} to ${currentBlock}...`);
+    const lookback = 60000; // ~12 hours is usually enough
+    const startBlock = currentBlock - lookback;
+    console.log(`Scanning from block ${startBlock} to ${currentBlock} in 100-block chunks...`);
 
     const filter = vault.filters.Deposited();
-    const logs = await vault.queryFilter(filter, fromBlock, currentBlock);
+    let logs = [];
 
-    console.log(`Found ${logs.length} total deposit events.`);
+    for (let chunkTo = currentBlock; chunkTo > startBlock; chunkTo -= 100) {
+        const chunkFrom = Math.max(chunkTo - 99, startBlock);
+        process.stdout.write(`\r🔍 Progress: ${(((currentBlock - chunkTo) / lookback) * 100).toFixed(1)}%... `);
+        try {
+            const chunkLogs = await vault.queryFilter(filter, chunkFrom, chunkTo);
+            logs = logs.concat(chunkLogs);
+        } catch (e) {
+            // If weird error, just continue
+        }
+    }
+    process.stdout.write(`\n`);
+
+    console.log(`Found ${logs.length} total deposit events in history.`);
 
     const arenasToRefund = new Map(); // arenaId -> { user -> amount }
 
