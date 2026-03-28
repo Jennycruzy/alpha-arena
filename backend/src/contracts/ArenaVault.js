@@ -101,7 +101,7 @@ export class ArenaVaultContract {
      */
     async _fetchLogsNative(fromBlock, toBlock) {
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5s timeout
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10s timeout
 
         try {
             const body = {
@@ -126,6 +126,8 @@ export class ArenaVaultContract {
             const data = await response.json();
 
             if (data.error) {
+                // Ignore "block range greater than 100" and just return empty logs for that chunk
+                if (data.error.message.includes("range")) return [];
                 throw new Error(data.error.message || "RPC Error");
             }
 
@@ -146,13 +148,13 @@ export class ArenaVaultContract {
      * Recovery tool: scan recent history for deposits.
      * X Layer RPC has a 100-block limit. This fetcher chunks the request.
      */
-    async getRecentDeposits(lookbackBlocks = 2000) {
+    async getRecentDeposits(lookbackBlocks = 30000) {
         if (config.demoMode) return [];
         this._init();
         try {
             logger.info("getRecentDeposits: Fetching current block number...");
             const currentBlock = await this.provider.getBlockNumber();
-            logger.info(`getRecentDeposits: Current block is ${currentBlock}`);
+            logger.info(`getRecentDeposits: Current block is ${currentBlock}. Looking back ${lookbackBlocks} blocks.`);
             const fromBlock = currentBlock - lookbackBlocks;
 
             let allLogs = [];
