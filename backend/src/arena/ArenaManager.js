@@ -630,19 +630,57 @@ class ArenaManager {
   }
 
   /**
-   * Disaster Recovery: Sync with blockchain on startup to find any users who paid for a waiting arena.
+   * Disaster Recovery: Sync with blockchain on startup to find any users who paid but aren't in memory.
    */
   async _syncWithBlockchain() {
     if (config.demoMode) return;
     logger.info("📡 Starting blockchain state recovery sync...");
 
     try {
+      const recentDeposits = await arenaVault.getRecentDeposits(-5000); // Check last ~15 hours
+      if (!recentDeposits || recentDeposits.length === 0) return;
+
       const arena = this.getWaitingArena();
       if (!arena) return;
 
-      // In production, we would query events here. 
-      // For now, the existing persistence.json handles restarts.
-      logger.info(`Recovery sync complete. Arena ${arena.id.slice(0, 8)} has ${arena.users.length} users.`);
+      // Map of all user IDs already tracked in any arena (waiting or active)
+      const trackedUsers = new Set();
+      for (const a of this.arenas.values()) {
+        for (const u of a.users) trackedUsers.add(u.userId.toLowerCase());
+      }
+
+      let recoveredCount = 0;
+      for (const deposit of recentDeposits) {
+        const userId = deposit.user.toLowerCase();
+        if (!trackedUsers.has(userId)) {
+          // Found a 'homeless' deposit!
+          // We'll assign them to the Momentum Trader by default if we don't know, 
+          // or just pick one. For a refund/recovery, the key is the 'Linked' state.
+          const user = {
+            userId,
+            agentId: AGENT_IDS.MOMENTUM,
+            entryFee: deposit.amount,
+            joinedAt: Date.now()
+          };
+
+          arena.users.push(user);
+          if (!arena.agentUsers[user.agentId]) arena.agentUsers[user.agentId] = [];
+          arena.agentUsers[user.agentId].push(userId);
+
+          trackedUsers.add(userId);
+          recoveredCount++;
+          logger.info(`✨ RECOVERED: User ${userId.slice(0, 8)} found on-chain (${deposit.amount} USDC)`);
+        }
+      }
+
+      if (recoveredCount > 0) {
+        this._saveStates();
+        // Check if we can start now
+        const ready = this._isReadyToStart(arena);
+        if (ready) this._startArena(arena);
+      }
+
+      logger.info(`Recovery sync complete. Recovered ${recoveredCount} users.`);
     } catch (err) {
       logger.warn(`Sync failed: ${err.message}`);
     }

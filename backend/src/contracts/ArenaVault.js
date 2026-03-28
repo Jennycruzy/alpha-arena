@@ -193,6 +193,27 @@ class ArenaVaultContract {
     }
 
     /**
+     * Recovery tool: scan recent history for deposits.
+     */
+    async getRecentDeposits(fromBlock = -2000) {
+        if (config.demoMode) return [];
+        this._init();
+        try {
+            const filter = this.contract.filters.Deposited();
+            const logs = await this.contract.queryFilter(filter, fromBlock);
+            return logs.map(l => ({
+                arenaId: l.args.arenaId,
+                user: l.args.user,
+                amount: Number(l.args.amount) / 1e6,
+                blockNumber: l.blockNumber
+            }));
+        } catch (err) {
+            logger.warn(`getRecentDeposits failed: ${err.message}`);
+            return [];
+        }
+    }
+
+    /**
      * Get the required payment spec for x402 response.
      * This is what the backend returns in the 402 body.
      */
