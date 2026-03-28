@@ -140,7 +140,7 @@ export default function LiveArena() {
                                 </div>
 
                                 <div className={`font-mono text-2xl font-bold tracking-tighter text-center ${roiPositive ? "text-success" : "text-error"}`}>
-                                    {roiPositive ? "+" : ""}{roi.toFixed(2)}%
+                                    {roiPositive ? "+" : ""}{(roi || 0).toFixed(2)}%
                                 </div>
 
                                 <div className="text-center font-mono">
@@ -151,7 +151,7 @@ export default function LiveArena() {
                                 <div className="flex flex-col items-end">
                                     <div className="flex items-center gap-2 mb-2">
                                         <span className="terminal-text text-muted uppercase text-xs font-bold tracking-widest">Victory Odds</span>
-                                        <span className="font-mono text-sm font-black text-primary">{(agent.winProbability || 0).toFixed(1)}%</span>
+                                        <span className="font-mono text-sm font-black text-primary">{((agent.winProbability || 0)).toFixed(1)}%</span>
                                     </div>
                                     <div className="w-24 h-1 bg-white/5 border border-white/10 overflow-hidden">
                                         <motion.div

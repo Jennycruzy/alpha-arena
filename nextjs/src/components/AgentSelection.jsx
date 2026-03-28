@@ -109,7 +109,7 @@ export default function AgentSelection() {
             let result;
             for (let i = 0; i < 12; i++) {
                 try {
-                    result = await api.joinArena(address, normalizedAllocations, arenaId, depositTx, true);
+                    result = await api.joinArena(address, normalizedAllocations, arenaId, depositTx, isPrivateArena);
                     break;
                 } catch (err) {
                     if (err.message?.includes("Payment verification") && i < 11) {

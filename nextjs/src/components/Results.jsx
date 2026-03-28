@@ -79,7 +79,7 @@ export default function Results() {
                     <div className="flex flex-col items-start md:items-end">
                         <div className="terminal-text text-muted mb-2">Total Yield Distribution</div>
                         <div className="font-mono text-5xl font-bold text-success tracking-tighter bg-surface border border-border px-6 py-2 shadow-xl">
-                            ${results.totalPool?.toFixed(2)} <span className="text-xs opacity-50">USDC</span>
+                            ${(results.totalPool || 0).toFixed(2)} <span className="text-xs opacity-50">USDC</span>
                         </div>
                     </div>
                 </div>
@@ -111,7 +111,7 @@ export default function Results() {
                         <div className="text-center md:text-right">
                             <div className="terminal-text text-muted mb-2">Performance ROI</div>
                             <div className={`font-mono text-6xl font-black tracking-tighter ${winner?.roi >= 0 ? "text-success" : "text-error"}`}>
-                                {winner?.roi >= 0 ? "+" : ""}{winner?.roi?.toFixed(2)}%
+                                {winner?.roi >= 0 ? "+" : ""}{(winner?.roi || 0).toFixed(2)}%
                             </div>
                         </div>
                     </div>
@@ -126,11 +126,11 @@ export default function Results() {
                                 <div>
                                     <div className="terminal-text text-muted mb-2">Payout Amount</div>
                                     <div className={`font-mono text-5xl font-bold tracking-tighter ${myPayout.profit >= 0 ? "text-success" : "text-error"}`}>
-                                        ${myPayout.payout.toFixed(4)}
+                                        ${(myPayout.payout || 0).toFixed(4)}
                                     </div>
                                     <div className="terminal-text text-muted mt-6 flex gap-4">
-                                        <span>ENTRY: ${myPayout.entryFee.toFixed(2)}</span>
-                                        <span>PNL: {((myPayout.payout / myPayout.entryFee - 1) * 100).toFixed(2)}%</span>
+                                        <span>ENTRY: ${(myPayout.entryFee || 0).toFixed(2)}</span>
+                                        <span>PNL: {myPayout.entryFee > 0 ? ((myPayout.payout / myPayout.entryFee - 1) * 100).toFixed(2) : "0.00"}%</span>
                                     </div>
                                 </div>
                                 <div className="font-display font-black text-6xl opacity-10 select-none group-hover:opacity-20 transition-opacity">
@@ -179,7 +179,7 @@ export default function Results() {
                                     <div className="text-muted text-xs uppercase tracking-widest font-bold">{evol?.xp || 0} XP</div>
                                 </div>
                                 <div className={`font-mono text-xl font-bold tracking-tighter text-center ${agent.roi >= 0 ? "text-success" : "text-error"}`}>
-                                    {agent.roi >= 0 ? "+" : ""}{agent.roi?.toFixed(2)}%
+                                    {agent.roi >= 0 ? "+" : ""}{(agent.roi || 0).toFixed(2)}%
                                 </div>
                                 <div className="font-mono text-muted text-right text-[10px] uppercase font-bold">{agent.tradeCount} TXS</div>
                             </div>
