@@ -129,7 +129,7 @@ export class BaseAgent {
       this.isPrivate
     );
 
-    logger.info(`[${this.name}] Decision: ${decision.action} ${decision.token} (conf: ${decision.confidence?.toFixed(2)}) via ${decision.provider} | Lv.${this.level}`);
+    logger.info(`[${this.name}] Decision: ${decision.action} ${decision.token} (conf: ${decision.(confidence && confidence.toFixed)(2)}) via ${decision.provider} | Lv.${this.level}`);
 
     // ── Build and store reasoning entry ────────────────────────────────────
     const reasoningEntry = {
@@ -169,7 +169,7 @@ export class BaseAgent {
     const balanceBefore = this.currentBalance;
     if (decision.action !== "HOLD" && (decision.confidence ?? 1) > 0.4) {
       const tradeResult = await this._executeTrade(decision, marketData);
-      if (tradeResult?.success) {
+      if ((tradeResult && tradeResult.success)) {
         // 🧬 Track balance mathematically since all agents share one wallet
         const tradeAmountUsdc = (tradeResult.outAmount || 0); // result from executeSwap
         const spentUsdc = decision.action === "BUY" ? (Number(decision.size) || 0) : 0;
@@ -338,7 +338,7 @@ In ONE concise sentence (max 20 words), what single specific lesson should you a
   }
 
   _selectToken(decision) {
-    const target = decision.token?.toUpperCase() || "WETH";
+    const target = decision.(token && token.toUpperCase)() || "WETH";
     const address = config.tokens[target];
     if (!address || address === "0x0000000000000000000000000000000000000000") {
       return { address: config.tokens.WETH, symbol: "WETH" };

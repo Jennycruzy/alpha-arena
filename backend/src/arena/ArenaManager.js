@@ -62,11 +62,11 @@ class ArenaManager {
   }
 
   getWaitingArena() {
-    return this.arenas.get(this.currentArenaId);
+    return this.arenas.get(this.currentArenaId) || null;
   }
 
   getArena(arenaId) {
-    return this.arenas.get(arenaId);
+    return this.arenas.get(arenaId) || null;
   }
 
   getArenaForUser(userId) {
@@ -349,7 +349,8 @@ class ArenaManager {
 
     for (const user of arena.users) {
       const isWinner = user.agentId === winner.agentId;
-      const agentStatus = arena.agents[user.agentId]?.getStatus();
+      const agent = arena.agents[user.agentId];
+      const agentStatus = agent ? agent.getStatus() : null;
       const agentCapital = arena.users
         .filter((u) => u.agentId === user.agentId)
         .reduce((s, u) => s + u.entryFee, 0);
@@ -359,9 +360,11 @@ class ArenaManager {
         const userShare = user.entryFee / agentCapital;
         payout = user.entryFee + winnerProfit * userShare;
       } else if (isWinner) {
-        payout = (agentStatus?.currentBalance || 0) * (user.entryFee / agentCapital);
+        const currentBal = agentStatus ? agentStatus.currentBalance : 0;
+        payout = currentBal * (user.entryFee / agentCapital);
       } else {
-        payout = Math.max(0, (agentStatus?.currentBalance || 0) * (user.entryFee / agentCapital));
+        const currentBal = agentStatus ? agentStatus.currentBalance : 0;
+        payout = Math.max(0, currentBal * (user.entryFee / agentCapital));
       }
 
       payouts.push({
@@ -637,7 +640,7 @@ class ArenaManager {
     logger.info("📡 Starting blockchain state recovery sync...");
 
     try {
-      const recentDeposits = await arenaVault.getRecentDeposits(-20000); // Check last ~11 hours
+      const recentDeposits = await arenaVault.getRecentDeposits(20000); // Check last ~11 hours
       if (!recentDeposits || recentDeposits.length === 0) return;
 
       const arena = this.getWaitingArena();

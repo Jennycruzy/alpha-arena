@@ -63,7 +63,7 @@ CRITICAL PRIVACY CONSTRAINT:
         }
 
         const data = await res.json();
-        const text = data.choices?.[0]?.message?.content || "";
+        const text = data.choices?.[0]?.(message && message.content) || "";
         const clean = text.replace(/```json\n?|```/g, "").trim();
         const parsed = JSON.parse(clean);
 

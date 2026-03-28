@@ -21,10 +21,10 @@ export class WhaleFollowerAgent extends BaseAgent {
     ]);
 
     return {
-      whaleSignals: whaleSignals?.data || [],
+      whaleSignals: (whaleSignals && whaleSignals.data) || [],
       prices: {
-        WETH: ethPrice?.data?.[0]?.price || "unknown",
-        WBTC: btcPrice?.data?.[0]?.price || "unknown",
+        WETH: (ethPrice && ethPrice.data)?.[0]?.price || "unknown",
+        WBTC: (btcPrice && btcPrice.data)?.[0]?.price || "unknown",
       },
     };
   }

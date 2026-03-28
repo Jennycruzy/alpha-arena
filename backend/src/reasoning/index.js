@@ -49,7 +49,7 @@ function mockReason(agentId, isPrivate) {
     const tokens = ["WETH", "WBTC", "OKB"];
     const pool = biases[agentId] || ["BUY", "SELL", "HOLD"];
     const action = pool[_counter % pool.length];
-    const token = tokens[(_counter + (agentId?.length || 0)) % 3];
+    const token = tokens[(_counter + ((agentId && agentId.length) || 0)) % 3];
     const conf = parseFloat((0.55 + ((_counter * 7) % 30) / 100).toFixed(2));
     const reasons = DEMO_REASONS[agentId] || ["Analyzing market conditions..."];
 

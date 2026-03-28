@@ -22,11 +22,11 @@ export class MomentumTraderAgent extends BaseAgent {
     ]);
 
     return {
-      trending: trending?.data || [],
+      trending: (trending && trending.data) || [],
       prices: {
-        WETH: ethPrice?.data?.[0]?.price || "unknown",
-        WBTC: btcPrice?.data?.[0]?.price || "unknown",
-        OKB: okbPrice?.data?.[0]?.price || "unknown",
+        WETH: (ethPrice && ethPrice.data)?.[0]?.price || "unknown",
+        WBTC: (btcPrice && btcPrice.data)?.[0]?.price || "unknown",
+        OKB: (okbPrice && okbPrice.data)?.[0]?.price || "unknown",
       },
     };
   }

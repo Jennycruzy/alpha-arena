@@ -75,7 +75,7 @@ class OkxClient {
       const res = await axios.get(`${this.baseUrl}${requestPath}`, { headers });
       return res.data;
     } catch (err) {
-      logger.error(`OKX GET ${path} failed`, { status: err.response?.status });
+      logger.error(`OKX GET ${path} failed`, { status: err.(response && response.status) });
       throw err;
     }
   }
@@ -85,7 +85,7 @@ class OkxClient {
       const sym = Object.entries(config.tokens).find(([, a]) => a === tokenAddress)?.[0] || "WETH";
       return mockPrice(sym);
     }
-    const sym = Object.entries(config.tokens).find(([, a]) => a?.toLowerCase() === tokenAddress?.toLowerCase())?.[0] || "WETH";
+    const sym = Object.entries(config.tokens).find(([, a]) => (a && a.toLowerCase)() === (tokenAddress && tokenAddress.toLowerCase)())?.[0] || "WETH";
     try {
       const res = await this.get("/api/v5/dex/market/token-price", { chainId: String(chainId), tokenContractAddress: tokenAddress });
       return res;

@@ -30,7 +30,7 @@ export function require402(req, res, next) {
 
     if (!paymentHeader) {
         // No payment header — issue a 402 with the payment specification
-        const arenaId = req.body?.arenaId || "pending";
+        const arenaId = req.(body && body.arenaId) || "pending";
         const paymentSpec = arenaVault.getPaymentSpec(arenaId);
 
         logger.info(`x402: Issuing 402 for arena join (arena: ${arenaId})`);

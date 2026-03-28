@@ -26,7 +26,7 @@ function demoDec(agentId) {
   };
   const pool = biases[agentId] || DEMO_ACTIONS;
   const action = pool[_demoCounter % pool.length];
-  const token = DEMO_TOKENS[(_demoCounter + (agentId?.length || 0)) % 3];
+  const token = DEMO_TOKENS[(_demoCounter + ((agentId && agentId.length) || 0)) % 3];
   const confidence = 0.55 + (((_demoCounter * 7) % 30) / 100);
   return { action, token, confidence, reason: `[DEMO] ${agentId} demo reasoning cycle ${_demoCounter}` };
 }

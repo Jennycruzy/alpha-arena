@@ -194,14 +194,25 @@ class ArenaVaultContract {
 
     /**
      * Recovery tool: scan recent history for deposits.
+     * X Layer RPC has a 100-block limit. This fetcher chunks the request.
      */
-    async getRecentDeposits(fromBlock = -2000) {
+    async getRecentDeposits(lookbackBlocks = 2000) {
         if (config.demoMode) return [];
         this._init();
         try {
+            const currentBlock = await this.provider.getBlockNumber();
+            const fromBlock = currentBlock - lookbackBlocks;
             const filter = this.contract.filters.Deposited();
-            const logs = await this.contract.queryFilter(filter, fromBlock);
-            return logs.map(l => ({
+
+            let allLogs = [];
+            // Fetch in chunks of 100 blocks to respect RPC limits
+            for (let i = fromBlock; i < currentBlock; i += 100) {
+                const chunkTo = Math.min(i + 99, currentBlock);
+                const logs = await this.contract.queryFilter(filter, i, chunkTo);
+                allLogs = allLogs.concat(logs);
+            }
+
+            return allLogs.map(l => ({
                 arenaId: l.args.arenaId,
                 user: l.args.user,
                 amount: Number(l.args.amount) / 1e6,

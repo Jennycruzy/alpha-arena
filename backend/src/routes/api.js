@@ -60,11 +60,14 @@ router.get("/arena/current", (_req, res) => {
     isPrivate: arena.isPrivate,
     userCount: arena.users.length,
     agentSelections: arenaManager._getAgentSelections(arena),
-    users: arena.users.map((u) => ({
-      userId: u.userId.slice(0, 6) + "..." + u.userId.slice(-4),
-      agentId: u.agentId,
-      agentName: AGENT_META[u.agentId]?.name,
-    })),
+    users: arena.users.map((u) => {
+      const meta = AGENT_META[u.agentId];
+      return {
+        userId: u.userId.slice(0, 6) + "..." + u.userId.slice(-4),
+        agentId: u.agentId,
+        agentName: meta ? meta.name : "Unknown",
+      };
+    }),
   });
 });
 
@@ -72,9 +75,10 @@ router.get("/arena/user/:userId", (req, res) => {
   const arena = arenaManager.getArenaForUser(req.params.userId);
   if (!arena) return res.status(404).json({ error: "User not in any arena" });
   const view = arenaManager.getSpectatorView(arena.id);
-  view.myAgentId = arena.users.find(
+  const user = arena.users.find(
     (u) => u.userId.toLowerCase() === req.params.userId.toLowerCase()
-  )?.agentId;
+  );
+  view.myAgentId = user ? user.agentId : null;
   res.json(view);
 });
 
