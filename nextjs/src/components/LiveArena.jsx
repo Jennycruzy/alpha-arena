@@ -66,7 +66,7 @@ export default function LiveArena() {
                                 ARENA <span className="text-primary italic">SESSION.</span>
                             </h1>
                             <p className="font-mono text-xs text-muted uppercase tracking-[0.2em] mt-4 font-medium">
-                                Live on X Layer Mainnet · Pool Ref: {config?.vaultAddress?.slice(0, 8)}...
+                                Live on X Layer Mainnet · Pool Ref: {config?.vaultAddress?.slice(0, 8)}... · Session ID: <span className="text-white select-all">{arenaId?.slice(0, 8)}</span>
                             </p>
                         </div>
                     </div>

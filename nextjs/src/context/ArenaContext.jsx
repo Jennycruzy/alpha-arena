@@ -75,6 +75,7 @@ export function ArenaProvider({ children }) {
             }),
             ws.on("arena_started", (data) => {
                 if (!arenaId || data.arenaId === arenaId) {
+                    console.log("🔥 Arena Started. Tactical ID:", data.arenaId);
                     setArenaId(data.arenaId);
                     setIsPrivateArena(data.isPrivate || false);
                     setPhase("live");

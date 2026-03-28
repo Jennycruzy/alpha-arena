@@ -14,7 +14,8 @@ export class BaseAgent {
     this.agentId = agentId;
     this.chainId = config.chain.id;
     this.initialBalance = initialBalance;
-    this.currentBalance = initialBalance;
+    this.cashBalance = initialBalance;
+    this.currentBalance = initialBalance; // Total portfolio value
     this.trades = [];
     this.running = false;
     this.loopTimer = null;
@@ -56,6 +57,7 @@ export class BaseAgent {
 
   async start(capitalUsdc, isPrivate = false) {
     this.initialBalance = capitalUsdc;
+    this.cashBalance = capitalUsdc;
     this.currentBalance = capitalUsdc;
     this.isPrivate = isPrivate;
     this.running = true;
@@ -167,9 +169,14 @@ export class BaseAgent {
           const spentUsdc = decision.action === "BUY" ? (Number(decision.size) || 0) : 0;
 
           if (decision.action === "BUY") {
-            this.currentBalance -= spentUsdc;
+            this.cashBalance -= spentUsdc;
+            // Track holdings for total value calculation
+            const tokenSym = decision.token.toUpperCase();
+            this.holdings[tokenSym] = (this.holdings[tokenSym] || 0) + tradeResult.outAmount;
           } else if (decision.action === "SELL") {
-            this.currentBalance += tradeAmountUsdc;
+            const tokenSym = decision.token.toUpperCase();
+            this.cashBalance += tradeAmountUsdc;
+            this.holdings[tokenSym] = 0; // Simplified: sell all
           }
 
           const trade = {
@@ -300,7 +307,7 @@ export class BaseAgent {
     const levelMultiplier = 1 + (this.level - 1) * 0.05;
     const confidence = (decision.confidence !== undefined && decision.confidence !== null) ? decision.confidence : 0.5;
     const tradePercent = Math.min(confidence * 0.3 * levelMultiplier, 0.35);
-    const tradeAmount = Math.floor(this.currentBalance * tradePercent * 1e6);
+    const tradeAmount = Math.floor(this.cashBalance * tradePercent * 1e6);
 
     if (tradeAmount < 1000) {
       logger.info(`[${this.name}] Trade too small (${tradeAmount}), skipping`);
@@ -325,7 +332,7 @@ export class BaseAgent {
       const pos = this.positions[symbol];
       const pnl = pos.side === "LONG" ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
       const pnlUsdc = (pnl / pos.entryPrice) * pos.sizeUsdc;
-      this.currentBalance += pnlUsdc;
+      this.cashBalance += pnlUsdc;
       delete this.positions[symbol];
       logger.info(`[${this.name}] Closed ${pos.side} ${symbol} at ${currentPrice} (PnL: $${pnlUsdc.toFixed(2)})`);
     }
@@ -333,7 +340,7 @@ export class BaseAgent {
     // Open new position
     const levelMultiplier = 1 + (this.level - 1) * 0.1;
     const confidence = (decision.confidence !== undefined && decision.confidence !== null) ? decision.confidence : 0.5;
-    const sizeUsdc = this.currentBalance * Math.min(confidence * 0.5 * levelMultiplier, 0.8);
+    const sizeUsdc = this.cashBalance * Math.min(confidence * 0.5 * levelMultiplier, 0.8);
 
     if (sizeUsdc < 0.01) {
       logger.info(`[${this.name}] Perp position too small ($${sizeUsdc.toFixed(2)}), skipping`);
@@ -346,6 +353,9 @@ export class BaseAgent {
       sizeUsdc: sizeUsdc,
       liquidationPrice: decision.action === "LONG" ? currentPrice * 0.85 : currentPrice * 1.15
     };
+
+    // Deduct margin from cash? In many perp models, you just need it as collateral.
+    // For simplicity, we'll keep it in cashBalance for now as it's not "spent" like in Spot.
 
     logger.info(`[${this.name}] Opened ${decision.action} ${symbol} at ${currentPrice} | Size: $${sizeUsdc.toFixed(2)}`);
 
@@ -367,21 +377,29 @@ export class BaseAgent {
   }
 
   async _updateBalance() {
-    // 1. Calculate Unrealized PnL from Perp positions
-    let unrealizedPnl = 0;
     const marketData = await this.fetchMarketData();
+    let totalValue = this.cashBalance;
 
+    // 1. Add Spot Holdings Value
+    for (const [symbol, amount] of Object.entries(this.holdings)) {
+      if (amount > 0) {
+        const price = marketData.prices[symbol] || 0;
+        totalValue += amount * price;
+      }
+    }
+
+    // 2. Add Unrealized PnL from Perp positions
     for (const [symbol, pos] of Object.entries(this.positions)) {
       const currentPrice = marketData.prices[symbol] || pos.entryPrice;
       const pnl = pos.side === "LONG" ? (currentPrice - pos.entryPrice) : (pos.entryPrice - currentPrice);
       const pnlUsdc = (pnl / pos.entryPrice) * pos.sizeUsdc;
-      unrealizedPnl += pnlUsdc;
+      totalValue += pnlUsdc;
 
       // Liquidation check
       if ((pos.side === "LONG" && currentPrice <= pos.liquidationPrice) ||
         (pos.side === "SHORT" && currentPrice >= pos.liquidationPrice)) {
         logger.warn(`[${this.name}] 💀 LIQUIDATED ${pos.side} ${symbol} at ${currentPrice}`);
-        this.currentBalance -= pos.sizeUsdc;
+        this.cashBalance -= pos.sizeUsdc; // Lose the margin
         delete this.positions[symbol];
       }
     }
@@ -389,14 +407,13 @@ export class BaseAgent {
     if (config.demoMode) {
       if (this.trades.length > 0) {
         const levelEdge = (this.level - 1) * 0.002;
-        const riskBias = (this.riskMultiplier || 1.0) * 0.035;
-        const delta = this.currentBalance * ((Math.random() - 0.40 + levelEdge) * riskBias);
-        this.currentBalance = Math.max(0, this.currentBalance + delta);
+        const riskBias = (this.riskMultiplier || 1.0) * 0.01;
+        const drift = (Math.random() - 0.45 + levelEdge) * riskBias;
+        totalValue *= (1 + drift);
       }
     }
 
-    // Total balance = Wallet Balance + Unrealized PnL
-    this.currentBalance += unrealizedPnl;
+    this.currentBalance = totalValue;
   }
 
   getStatus() {

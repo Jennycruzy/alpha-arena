@@ -203,9 +203,11 @@ class ArenaManager {
   async _startArena(arena) {
     arena.status = "active";
     arena.startTime = Date.now();
-    arena.endTime = arena.startTime + config.competition.durationSeconds * 1000;
 
-    logger.info(`🔥 Arena ${arena.id.slice(0, 8)} STARTING (${arena.isPrivate ? "PRIVATE" : "PUBLIC"})`);
+    const duration = config.competition.durationSeconds;
+    arena.endTime = arena.startTime + duration * 1000;
+
+    logger.info(`🔥 Arena ${arena.id.slice(0, 8)} STARTING (${arena.isPrivate ? "PRIVATE" : "PUBLIC"}) | Duration: ${duration}s`);
 
     const agentCapitals = {};
     for (const user of arena.users) {
@@ -285,7 +287,7 @@ class ArenaManager {
 
     arena.timer = setTimeout(
       () => this._endArena(arena),
-      config.competition.durationSeconds * 1000
+      duration * 1000
     );
 
     this._ensureWaitingArena();
@@ -689,6 +691,30 @@ class ArenaManager {
     } catch (err) {
       logger.warn(`Sync failed: ${err.message}`);
     }
+  }
+
+  forceEndArena(arenaId) {
+    const arena = this.arenas.get(arenaId);
+    if (!arena || arena.status !== "active") return false;
+
+    logger.info(`⚡ Force ending arena ${arenaId.slice(0, 8)}...`);
+    if (arena.timer) clearTimeout(arena.timer);
+    this._endArena(arena);
+    return true;
+  }
+
+  async settleAll() {
+    logger.info("🧨 Global Settlement Initiated: Clearing all arenas...");
+    const arenas = Array.from(this.arenas.values());
+    for (const arena of arenas) {
+      if (arena.status === "waiting") {
+        await this._refundArena(arena);
+      } else if (arena.status === "active") {
+        if (arena.timer) clearTimeout(arena.timer);
+        await this._endArena(arena);
+      }
+    }
+    return { success: true, count: arenas.length };
   }
 }
 

@@ -195,4 +195,21 @@ router.post("/arena/force-link", (req, res) => {
   }
 });
 
+router.post("/arena/force-end", (req, res) => {
+  const { arenaId, secret } = req.body;
+  // Use same rescue secret for now
+  if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
+
+  const success = arenaManager.forceEndArena(arenaId);
+  res.json({ success });
+});
+
+router.post("/arena/settle-all", async (req, res) => {
+  const { secret } = req.body;
+  if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
+
+  const result = await arenaManager.settleAll();
+  res.json(result);
+});
+
 export default router;
