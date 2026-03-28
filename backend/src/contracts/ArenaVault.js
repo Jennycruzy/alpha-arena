@@ -108,8 +108,8 @@ export class ArenaVaultContract {
             const filter = this.contract.filters.Deposited();
 
             let allLogs = [];
-            for (let chunkTo = currentBlock; chunkTo > fromBlock; chunkTo -= 100) {
-                const chunkFrom = Math.max(chunkTo - 99, fromBlock);
+            for (let chunkTo = currentBlock; chunkTo > fromBlock; chunkTo -= 99) {
+                const chunkFrom = Math.max(chunkTo - 98, fromBlock);
                 try {
                     const logs = await this.contract.queryFilter(filter, chunkFrom, chunkTo);
                     allLogs = allLogs.concat(logs);
