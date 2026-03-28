@@ -108,13 +108,17 @@ export class ArenaVaultContract {
             const filter = this.contract.filters.Deposited();
 
             let allLogs = [];
-            for (let i = fromBlock; i < currentBlock; i += 100) {
-                const chunkTo = Math.min(i + 99, currentBlock);
+            for (let chunkTo = currentBlock; chunkTo > fromBlock; chunkTo -= 100) {
+                const chunkFrom = Math.max(chunkTo - 99, fromBlock);
                 try {
-                    const logs = await this.contract.queryFilter(filter, i, chunkTo);
+                    const logs = await this.contract.queryFilter(filter, chunkFrom, chunkTo);
                     allLogs = allLogs.concat(logs);
                 } catch (chunkErr) {
-                    logger.warn(`Chunk ${i}-${chunkTo} failed: ${chunkErr.message}`);
+                    logger.warn(`Chunk ${chunkFrom}-${chunkTo} failed: ${chunkErr.message}`);
+                    // If RPC forcefully rejects the deep history outright, we stop querying further back
+                    if (chunkErr.message.includes("limit") || chunkErr.message.includes("range")) {
+                        break;
+                    }
                 }
                 // Delay to bypass public RPC rate limits
                 await new Promise(r => setTimeout(r, 200));
