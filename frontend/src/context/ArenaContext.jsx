@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { useWallet } from "../hooks/useWallet";
 import { useWebSocket } from "../hooks/useWebSocket";
+import { api } from "../utils/api";
 
 const ArenaContext = createContext(null);
 
@@ -15,6 +16,42 @@ export function ArenaProvider({ children }) {
   const [remainingMs, setRemainingMs] = useState(0);
   const [results, setResults] = useState(null);
   const [agentSelections, setAgentSelections] = useState({});
+
+  // ── On wallet connect: check if user is already in a waiting/live arena ──
+  useEffect(() => {
+    const address = wallet && wallet.address;
+    if (!address) return;
+
+    // Only restore if we're at the landing page (don't override an active session)
+    if (phase !== "landing") return;
+
+    api.getUserArena(address)
+      .then((arenaData) => {
+        if (!arenaData) return;
+
+        setArenaId(arenaData.id);
+        setAgentSelections(arenaData.agentSelections || {});
+
+        // Restore selected agent
+        if (arenaData.myAgentId) {
+          setSelectedAgent(arenaData.myAgentId);
+        }
+
+        if (arenaData.status === "waiting") {
+          setPhase("waiting");
+        } else if (arenaData.status === "active") {
+          setPhase("live");
+          setRemainingMs(arenaData.remainingMs || 0);
+        } else if (arenaData.status === "completed" && arenaData.results) {
+          setResults(arenaData.results);
+          setPhase("results");
+        }
+      })
+      .catch(() => {
+        // Not found — user has no active arena, stay on landing
+      });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [wallet && wallet.address]);
 
   // WebSocket event listeners
   useEffect(() => {

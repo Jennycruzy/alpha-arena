@@ -16,6 +16,8 @@ export const api = {
   getCurrentArena: () => request("/arena/current"),
   getArena: (id) => request(`/arena/${id}`),
   getAllArenas: () => request("/arenas"),
+  getUserArena: (userId) => request(`/arena/user/${userId}`),
+
 
   createPaymentIntent: (userId) =>
     request("/payment/intent", {
