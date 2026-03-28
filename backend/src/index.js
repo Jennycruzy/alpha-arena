@@ -17,6 +17,16 @@ app.use(express.json());
 // API routes
 app.use("/api", apiRoutes);
 
+// Global Error Handler
+app.use((err, req, res, next) => {
+  logger.error(`[Global Error] ${err.stack}`);
+  res.status(err.status || 500).json({
+    error: err.message || "Internal Server Error",
+    path: req.path,
+    timestamp: Date.now()
+  });
+});
+
 // HTTP server
 const server = http.createServer(app);
 

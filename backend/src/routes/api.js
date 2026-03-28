@@ -7,6 +7,11 @@ import logger from "../utils/logger.js";
 
 const router = Router();
 
+// Error handler wrapper for async routes
+const asyncHandler = (fn) => (req, res, next) => {
+  Promise.resolve(fn(req, res, next)).catch(next);
+};
+
 // ─── Health & Status ─────────────────────────────────────────────────────────
 router.get("/health", (_req, res) => {
   res.json({ status: "ok", timestamp: Date.now() });
@@ -52,7 +57,7 @@ router.get("/arenas/public", (_req, res) => {
   res.json({ arenas: arenaManager.getPublicArenas() });
 });
 
-router.get("/arena/current", (_req, res) => {
+router.get("/arena/current", asyncHandler(async (_req, res) => {
   const arena = arenaManager.getWaitingArena();
   if (!arena) return res.status(404).json({ error: "No active arena" });
   res.json({
@@ -70,9 +75,9 @@ router.get("/arena/current", (_req, res) => {
       };
     }),
   });
-});
+}));
 
-router.get("/arena/user/:userId", (req, res) => {
+router.get("/arena/user/:userId", asyncHandler(async (req, res) => {
   const arena = arenaManager.getArenaForUser(req.params.userId);
   if (!arena) return res.status(404).json({ error: "User not in any arena" });
   const view = arenaManager.getSpectatorView(arena.id);
@@ -81,30 +86,30 @@ router.get("/arena/user/:userId", (req, res) => {
   );
   view.myAgentId = user ? user.agentId : null;
   res.json(view);
-});
+}));
 
-router.get("/arena/:arenaId", (req, res) => {
+router.get("/arena/:arenaId", asyncHandler(async (req, res) => {
   const view = arenaManager.getSpectatorView(req.params.arenaId);
   if (!view) return res.status(404).json({ error: "Arena not found" });
   res.json(view);
-});
+}));
 
 // ─── Spectator (public, no wallet) ───────────────────────────────────────────
-router.get("/spectate/:arenaId", (req, res) => {
+router.get("/spectate/:arenaId", asyncHandler(async (req, res) => {
   const view = arenaManager.getSpectatorView(req.params.arenaId);
   if (!view) return res.status(404).json({ error: "Arena not found" });
   res.json(view);
-});
+}));
 
-router.get("/spectate/:arenaId/reasoning", (req, res) => {
+router.get("/spectate/:arenaId/reasoning", asyncHandler(async (req, res) => {
   const arena = arenaManager.getArena(req.params.arenaId);
   if (!arena) return res.status(404).json({ error: "Arena not found" });
   if (arena.isPrivate) return res.json({ log: [], isPrivate: true });
   res.json({ log: (arena.reasoningLog || []).slice(0, 30), isPrivate: false });
-});
+}));
 
 // ─── Join Arena (x402 protected) ─────────────────────────────────────────────
-router.post("/arena/join", require402, async (req, res) => {
+router.post("/arena/join", require402, asyncHandler(async (req, res) => {
   const { userId, agentId, isPrivate = false } = req.body;
   if (!userId || !agentId) {
     return res.status(400).json({ error: "userId and agentId required" });
@@ -126,10 +131,10 @@ router.post("/arena/join", require402, async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-});
+}));
 
 // ─── Copy Winner ──────────────────────────────────────────────────────────────
-router.post("/copy-trade/start", async (req, res) => {
+router.post("/copy-trade/start", asyncHandler(async (req, res) => {
   const { userId, agentId, capitalUsdc, isPrivate = false } = req.body;
   if (!userId || !agentId || !capitalUsdc) {
     return res.status(400).json({ error: "userId, agentId, and capitalUsdc required" });
@@ -146,22 +151,22 @@ router.post("/copy-trade/start", async (req, res) => {
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
-});
+}));
 
-router.post("/copy-trade/stop", async (req, res) => {
+router.post("/copy-trade/stop", asyncHandler(async (req, res) => {
   const { userId } = req.body;
   if (!userId) return res.status(400).json({ error: "userId required" });
   arenaManager.stopCopyTradeSession(userId);
   res.json({ stopped: true });
-});
+}));
 
-router.get("/copy-trade/status/:userId", (req, res) => {
+router.get("/copy-trade/status/:userId", asyncHandler(async (req, res) => {
   const status = arenaManager.getCopyTradeStatus(req.params.userId);
   if (!status) return res.status(404).json({ error: "No active copy trade session" });
   res.json(status);
-});
+}));
 
-router.post("/arena/rescue", async (req, res) => {
+router.post("/arena/rescue", asyncHandler(async (req, res) => {
   const { arenaId, recipients, amounts, secret, skipReturn = false, forceRoute = false } = req.body;
   // Simple secret protection for manual rescue
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
@@ -173,11 +178,11 @@ router.post("/arena/rescue", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+}));
 
 // ─── Admin: Force-link a verified depositor into the waiting arena ───────────
 // Use this when a deposit was verified on-chain but server lost state.
-router.post("/arena/force-link", (req, res) => {
+router.post("/arena/force-link", asyncHandler(async (req, res) => {
   const { userId, agentId, entryFee, secret } = req.body;
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
   if (!userId || !agentId || !entryFee) return res.status(400).json({ error: "Missing params" });
@@ -193,31 +198,31 @@ router.post("/arena/force-link", (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
-});
+}));
 
-router.post("/arena/force-end", (req, res) => {
+router.post("/arena/force-end", asyncHandler(async (req, res) => {
   const { arenaId, secret } = req.body;
   // Use same rescue secret for now
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
 
   const success = arenaManager.forceEndArena(arenaId);
   res.json({ success });
-});
+}));
 
-router.post("/arena/settle-all", async (req, res) => {
+router.post("/arena/settle-all", asyncHandler(async (req, res) => {
   const { secret } = req.body;
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
 
   const result = await arenaManager.settleAll();
   res.json(result);
-});
+}));
 
-router.post("/arena/force-start", (req, res) => {
+router.post("/arena/force-start", asyncHandler(async (req, res) => {
   const { arenaId, secret } = req.body;
   if (secret !== "alpha-rescue-2024") return res.status(403).json({ error: "Forbidden" });
 
   const success = arenaManager.forceStartArena(arenaId);
   res.json({ success });
-});
+}));
 
 export default router;

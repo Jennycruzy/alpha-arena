@@ -11,7 +11,23 @@ async function request(path, options = {}) {
         },
         ...rest,
     });
-    const data = await res.json();
+
+    const contentType = res.headers.get("content-type");
+    let data;
+
+    if (contentType && contentType.includes("application/json")) {
+        try {
+            data = await res.json();
+        } catch (err) {
+            throw new Error(`Failed to parse response as JSON for ${path}`);
+        }
+    } else {
+        // Not JSON — likely an HTML error page from proxy or server crash
+        const text = await res.text();
+        console.error(`Non-JSON response for ${path}: ${text.slice(0, 200)}...`);
+        throw new Error(`Server returned invalid response (Status: ${res.status}). The backend might be down or misconfigured.`);
+    }
+
     if (!res.ok) throw new Error(data.error || `Request failed: ${res.status}`);
     return data;
 }
