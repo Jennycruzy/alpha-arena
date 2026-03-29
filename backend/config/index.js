@@ -41,6 +41,7 @@ const config = {
   ai: {
     provider: process.env.AI_PROVIDER || "openai",
     openaiKey: process.env.OPENAI_API_KEY || "",
+    openaiModel: process.env.OPENAI_MODEL || "o1-mini",
     anthropicKey: process.env.ANTHROPIC_API_KEY || "",
   },
 

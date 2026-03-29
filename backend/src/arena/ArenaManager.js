@@ -494,10 +494,11 @@ class ArenaManager {
 
           // 3. Distribute to recipients
           logger.info(`[Payout Attempt ${retryCount + 1}] Distributing payout to ${recipients.length} recipients...`);
-          const parsedAmounts = amounts.map(a => ethers.utils.parseUnits(a.toFixed(6), 6));
-          const r = await arenaVault.distributePayout(arena.id, recipients, parsedAmounts);
+          // BUG FIX: ArenaVault.distributePayout expects floats (amounts), NOT BigNumber (parsedAmounts)
+          const r = await arenaVault.distributePayout(arena.id, recipients, amounts);
+
           if (r.success) {
-            logger.info(`ArenaVault payout tx confirmed: ${r.txHash}`);
+            logger.info(`✅ ArenaVault payout tx confirmed: ${r.txHash}`);
             break; // Success! Exit loop.
           } else {
             throw new Error(r.error || "Unknown payout error");
